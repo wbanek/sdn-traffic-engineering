@@ -1,0 +1,58 @@
+name: spine-leaf-3x4
+topology:
+  defaults:
+    kind: linux
+  nodes:
+    spine1:
+      image: quay.io/frrouting/frr:9.0.1
+    spine2:
+      image: quay.io/frrouting/frr:9.0.1
+    spine3:
+      image: quay.io/frrouting/frr:9.0.1
+
+    # --- LEAFS ---
+    leaf1:
+      image: quay.io/frrouting/frr:9.0.1
+    leaf2:
+      image: quay.io/frrouting/frr:9.0.1
+    leaf3:
+      image: quay.io/frrouting/frr:9.0.1
+    leaf4:
+      image: quay.io/frrouting/frr:9.0.1
+
+    # --- HOSTY GENERUJĄCE RUCH ---
+    h-video-src:
+      image: wbitt/network-multitool
+    h-video-dst:
+      image: wbitt/network-multitool
+    h-traffic-src:
+      image: wbitt/network-multitool
+    h-traffic-dst:
+      image: wbitt/network-multitool
+
+  links:
+    # --- POŁĄCZENIA LEAF 1 (Wideo - Nadawca) -> SPINE ---
+    - endpoints: ["leaf1:eth1", "spine1:eth1"]
+    - endpoints: ["leaf1:eth2", "spine2:eth1"]
+    - endpoints: ["leaf1:eth3", "spine3:eth1"]
+
+    # --- POŁĄCZENIA LEAF 2 (Wideo - Odbiorca) -> SPINE ---
+    - endpoints: ["leaf2:eth1", "spine1:eth2"]
+    - endpoints: ["leaf2:eth2", "spine2:eth2"]
+    - endpoints: ["leaf2:eth3", "spine3:eth2"]
+
+    # --- POŁĄCZENIA LEAF 3 (Ruch Tła - Nadawca) -> SPINE ---
+    - endpoints: ["leaf3:eth1", "spine1:eth3"]
+    - endpoints: ["leaf3:eth2", "spine2:eth3"]
+    - endpoints: ["leaf3:eth3", "spine3:eth3"]
+
+    # --- POŁĄCZENIA LEAF 4 (Ruch Tła - Odbiorca) -> SPINE ---
+    - endpoints: ["leaf4:eth1", "spine1:eth4"]
+    - endpoints: ["leaf4:eth2", "spine2:eth4"]
+    - endpoints: ["leaf4:eth3", "spine3:eth4"]
+
+    # --- POŁĄCZENIA HOSTÓW DO LEAF'ÓW ---
+    - endpoints: ["h-video-src:eth1", "leaf1:eth10"]
+    - endpoints: ["h-video-dst:eth1", "leaf2:eth10"]
+    - endpoints: ["h-traffic-src:eth1", "leaf3:eth10"]
+    - endpoints: ["h-traffic-dst:eth1", "leaf4:eth10"]
