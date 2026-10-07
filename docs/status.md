@@ -28,7 +28,11 @@ przez ospfd.conf
 - Host ma trasę default od dockera (eth0 mgmt) — bramę dodawać przez `ip route       
 replace`                                                                               
 - ECMP z hashem L3 (domyślny) nie rozrzuca przepływów między parą podsieci — wymagany
-sysctl L4                                                                              
+sysctl L4          
+- iperf3 UDP: domyślny datagram ~8 kB ginie na `tc tbf` (veth w clab ma MTU 9500 → brak                                                                                               
+fragmentacji, a tbf odrzuca pakiet większy niż `burst`; widoczne jako dropped w `tc -s qdisc`).                                                                                     
+Wszystkie testy UDP z `-l 1400` (zgodne z realnym RTP). Metryki UDP (loss/jitter) wyłącznie                                                                                         
+z raportu serwera — sender widnieje jako 0% loss nawet przy 100% strat.                                                                    
                                                                                     
 ## Następny krok                                                                     
 - Faza 2: limity `tc tbf` (10 Mb/s leaf-spine, 100 Mb/s host-leaf) 
