@@ -1,0 +1,275 @@
+name: sdn
+topology:
+  nodes:
+  # --- CONTROLLER ---
+    ryu-controller: 
+      kind: linux 
+      image: sdn-ryu:4.34
+      mgmt-ipv4: 172.20.20.100
+      cmd: ryu-manager --verbose --ofp-tcp-listen-port 6653 ryu.app.ofctl_rest
+
+
+    spine1: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure 
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2 
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth4 
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth4 root tbf rate 10mbit burst 32kbit latency 50ms
+    spine2: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2 
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth4 
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth4 root tbf rate 10mbit burst 32kbit latency 50ms
+    spine3: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2 
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth4 
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth4 root tbf rate 10mbit burst 32kbit latency 50ms
+
+    leaf1: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth10 
+        - ovs-vsctl add-port br0 eth11 
+        - ovs-vsctl add-port br0 eth12
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
+    leaf2: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth10 
+        - ovs-vsctl add-port br0 eth11 
+        - ovs-vsctl add-port br0 eth12
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
+    leaf3: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth10 
+        - ovs-vsctl add-port br0 eth11 
+        - ovs-vsctl add-port br0 eth12
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
+    leaf4: 
+      kind: linux 
+      image: kathara/sdn:latest 
+      exec: 
+        - /usr/share/openvswitch/scripts/ovs-ctl start 
+        - ovs-vsctl add-br br0 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl add-port br0 eth1 
+        - ovs-vsctl add-port br0 eth2
+        - ovs-vsctl add-port br0 eth3 
+        - ovs-vsctl add-port br0 eth10 
+        - ovs-vsctl add-port br0 eth11 
+        - ovs-vsctl add-port br0 eth12
+        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
+
+    # --- HOSTY ---
+    h1-video:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.1.10/24 dev eth1
+        - ip route replace default via 10.1.1.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h1-bg1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.1.11/24 dev eth1
+        - ip route replace default via 10.1.1.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h1-bg2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.1.12/24 dev eth1
+        - ip route replace default via 10.1.1.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h2-video:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.2.10/24 dev eth1
+        - ip route replace default via 10.1.2.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h2-bg1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.2.11/24 dev eth1
+        - ip route replace default via 10.1.2.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h2-bg2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.2.12/24 dev eth1
+        - ip route replace default via 10.1.2.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h3-video:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.3.10/24 dev eth1
+        - ip route replace default via 10.1.3.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h3-bg1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.3.11/24 dev eth1
+        - ip route replace default via 10.1.3.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h3-bg2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.3.12/24 dev eth1
+        - ip route replace default via 10.1.3.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h4-video:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.4.10/24 dev eth1
+        - ip route replace default via 10.1.4.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h4-bg1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.4.11/24 dev eth1
+        - ip route replace default via 10.1.4.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+    h4-bg2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec: 
+        - ip addr add 10.1.4.12/24 dev eth1
+        - ip route replace default via 10.1.4.1
+        - tc qdisc add dev eth1 root tbf rate 100mbit burst 320kbit latency 50ms
+
+  links:
+    # --- POŁĄCZENIA LEAF 1 -> SPINE ---
+    - endpoints: ["leaf1:eth1", "spine1:eth1"]
+    - endpoints: ["leaf1:eth2", "spine2:eth1"]
+    - endpoints: ["leaf1:eth3", "spine3:eth1"]
+
+    # --- POŁĄCZENIA LEAF 2 -> SPINE ---
+    - endpoints: ["leaf2:eth1", "spine1:eth2"]
+    - endpoints: ["leaf2:eth2", "spine2:eth2"]
+    - endpoints: ["leaf2:eth3", "spine3:eth2"]
+
+    # --- POŁĄCZENIA LEAF 3 -> SPINE ---
+    - endpoints: ["leaf3:eth1", "spine1:eth3"]
+    - endpoints: ["leaf3:eth2", "spine2:eth3"]
+    - endpoints: ["leaf3:eth3", "spine3:eth3"]
+
+
+    # --- POŁĄCZENIA LEAF 4 -> SPINE ---
+    - endpoints: ["leaf4:eth1", "spine1:eth4"]
+    - endpoints: ["leaf4:eth2", "spine2:eth4"]
+    - endpoints: ["leaf4:eth3", "spine3:eth4"]
+
+    # --- POŁĄCZENIA HOSTÓW DO LEAF 1 ---
+    - endpoints: ["h1-video:eth1", "leaf1:eth10"]
+    - endpoints: ["h1-bg1:eth1", "leaf1:eth11"]
+    - endpoints: ["h1-bg2:eth1", "leaf1:eth12"]
+    
+     # --- POŁĄCZENIA HOSTÓW DO LEAF 2 ---
+    - endpoints: ["h2-video:eth1", "leaf2:eth10"]
+    - endpoints: ["h2-bg1:eth1", "leaf2:eth11"]
+    - endpoints: ["h2-bg2:eth1", "leaf2:eth12"]
+    
+     # --- POŁĄCZENIA HOSTÓW DO LEAF 3 ---
+    - endpoints: ["h3-video:eth1", "leaf3:eth10"]
+    - endpoints: ["h3-bg1:eth1", "leaf3:eth11"]
+    - endpoints: ["h3-bg2:eth1", "leaf3:eth12"]
+    
+     # --- POŁĄCZENIA HOSTÓW DO LEAF 4 ---
+    - endpoints: ["h4-video:eth1", "leaf4:eth10"]
+    - endpoints: ["h4-bg1:eth1", "leaf4:eth11"]    
+    - endpoints: ["h4-bg2:eth1", "leaf4:eth12"]
