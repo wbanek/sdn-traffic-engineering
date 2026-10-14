@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-11)
+# Status projektu (ostatnia aktualizacja: 2026-10-14)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -20,19 +20,39 @@ nierównomierny)
 
 ## Działa — SDN (warianty B/C, infrastruktura)
 - Topologia `topologies/sdn.clab.yaml`: ten sam układ 3×4 + hosty, przełączniki OVS
-3.1.0 (`kathara/sdn`), OpenFlow 1.3, `fail-mode secure` ustawiany przed `add-port`,
-limity `tc tbf` jak w wariancie A
-- Własny obraz kontrolera `sdn-ryu:4.34` (`images/ryu/Dockerfile`):
+3.1.0 (`kathara/sdn`), OpenFlow 1.3
+- Jednolity exec na wszystkich 7 OVS, w tej kolejności: `fail-mode secure` →
+`protocols=OpenFlow13` → stały `datapath-id` → `add-port … ofport_request=N` →
+`tc tbf` → `set-controller` na końcu (łączy się dopiero z gotową konfiguracją)
+- datapath-id: leaf1–4 = `0x01`–`0x04`, spine1–3 = `0x11`–`0x13`
+- Numer portu OpenFlow = numer interfejsu: leaf uplinki 1–3 (eth1→spine1, eth2→spine2,
+eth3→spine3), hosty 10/11/12 (video/bg1/bg2); spine porty 1–4 = leaf1–4
+- Limity `tc tbf` w SDN: leaf↔spine 10mbit/burst **100kbit** (obie strony łącza),
+host↔leaf 100mbit/burst 320kbit
+- Zweryfikowane po deployu na wszystkich 7 przełącznikach: poprawne dpid i numery
+portów, porty LIVE, `fail_mode: secure`, `is_connected: true`, tbf burst 12800b
+- Własny obraz kontrolera `sdn-ryu:4.34` (`images/ryu/Dockerfile`, z `pbr`):
 `docker build -t sdn-ryu:4.34 images/ryu/`
 - Kontroler (mgmt 172.20.20.100:6653) uruchomiony z `ryu.app.ofctl_rest` (bez
-forwardingu) — 7/7 przełączników `is_connected: true`, 7 sesji TCP po stronie kontrolera
+forwardingu)
 - Podmiana samego kontrolera bez ruszania labu:
 `containerlab destroy/deploy -t sdn.clab.yaml --node-filter ryu-controller`
+- Ryu 4.34 także na hoście w `.venv` (Python 3.9) — do podpowiedzi i lintowania w IDE;
+uruchamianie i pomiary w kontenerze:
+  ```bash
+  uv venv --seed -p 3.9 .venv && source .venv/bin/activate
+  pip install setuptools==58.2.0 wheel pbr
+  pip install --no-build-isolation eventlet==0.30.2 dnspython==1.16.0 ryu==4.34
+  ```
+- Ściągawka Ryu (dekorator `@set_ev_cls`, fazy, zdarzenia, skróty): `docs/ryu-sciagawka.md`
 
 ## Nie działa / nie zrobione
 - Własna aplikacja Ryu (statyczna mapa topologii, ARP proxy bramy 10.1.L.1,
-proaktywne Flow Mods) — brak, więc brak łączności host↔host w SDN
-- Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte
+proaktywne Flow Mods, table-miss) — brak, więc brak łączności host↔host w SDN
+- Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte; logika C w fazie analizy
+(decyzje otwarte, patrz niżej)
+- **Niespójny burst tbf na łączach leaf↔spine: A = 32kbit, SDN = 100kbit** — do
+wyrównania przed pomiarami porównawczymi
 - Test TCP ~10 Mb/s — niezaliczony (TSO/GRO, patrz pułapki)
 
 ## Znane pułapki (żeby nie odkrywać ponownie)
@@ -52,26 +72,49 @@ Wszystkie testy UDP z `-l 1400` (zgodne z realnym RTP).
 sender pokazuje 0% loss nawet przy 100% strat.
 - TCP zamiera do ~0 na `tc tbf` z małym burstem: TSO/GRO skleja segmenty w super-pakiety
 większe niż burst, odrzucane w całości (cwnd zamrożone, retransmisje w rytmie RTO ~1/s).
+- tc liczy 1 kbit = 1024 bity: `burst 100kbit` = 12800 B, `32kbit` = 4096 B
 - Ryu 4.34 (ostatnie wydanie, 2020) nie instaluje się na nowym toolchainie: wymaga
-`setuptools==58.2.0` + `pip install --no-build-isolation` (inaczej `get_script_args`
-AttributeError) oraz `eventlet==0.30.2`, `dnspython==1.16.0` (inaczej `ALREADY_HANDLED`)
+`setuptools==58.2.0` + `pbr` + `pip install --no-build-isolation` (inaczej
+`get_script_args` AttributeError albo wersja `0.0.0`) oraz `eventlet==0.30.2`,
+`dnspython==1.16.0` (inaczej `ALREADY_HANDLED`). Python ≤ 3.9.
+- `uv pip install ryu` nie działa (odrzuca metadane pbr) — w venv używać zwykłego `pip`;
+`uv venv` bez `--seed` nie instaluje pip
 - `ryu.app.simple_switch_13` na Clos = burza broadcastów (pętle leaf-spine-leaf, brak
 STP; hosty same wysyłają multicast IPv6 po podniesieniu interfejsu) — nie uruchamiać
 - `ryu-manager --verbose` loguje eventy tylko, gdy jakaś aplikacja je konsumuje — sam
 `ofp_handler` nie pokaże `EventOFPSwitchFeatures`; połączenia sprawdzać przez
 `ovs-vsctl list controller` lub `ofctl_rest` (`/stats/switches`)
 - `cmd:` w YAML clab nadpisuje `CMD` z Dockerfile
+- `ovs-vsctl other-config:datapath-id=…` bez `set bridge br0` nie działa — poprawnie:
+`ovs-vsctl set bridge br0 other-config:datapath-id=…`
+- `speed: 10000 Mbps` w `ovs-ofctl show` / PortDesc to prędkość veth, nie limit tbf —
+obciążenie łączy liczyć względem stałych 10 Mb/s (uplink) i 100 Mb/s (host), nie `curr_speed`
+- Port `LOCAL(br0)` (`OFPP_LOCAL`) w stanie `PORT_DOWN`/`LINK_DOWN` jest normalny —
+pomijać w statystykach portów
+- `miss_send_len` w `ovs-ofctl show` dotyczy połączenia samego `ovs-ofctl`
+(konfiguracja per połączenie), nie Ryu
+- OVS pokazuje DSCP w `dump-flows` jako `nw_tos` = DSCP×4 (EF 46 → 184, AF41 34 → 136)
+- Bez reguły table-miss przełącznik w `fail-mode secure` odrzuca wszystko i nie wysyła
+Packet-In
 
 ## Odłożone na po spotkaniu z promotorem
 - Fix TSO/GRO (`ethtool -K <ethX> tso off gso off gro off` na wszystkich interfejsach
 labowych; do utrwalenia w exec obu topologii, żeby A/B/C miały identyczne warunki).
 Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
-- Ostateczne prędkości łączy / parametry `tc tbf` (rate, burst) — do ustalenia.
+- Ostateczne prędkości łączy / parametry `tc tbf` (rate, burst) — do ustalenia
+(i wyrównania między A a SDN).
+- Decyzje projektowe algorytmu C (przeanalizowane zalety/wady, bez rozstrzygnięć):
+  1. Klasyfikacja: samo DSCP czy DSCP + granica zaufania na portach hostów; EF czy AF41
+  2. Kolejki priorytetowe: tylko w C, we wszystkich A/B/C, czy macierz 2×2
+  (C z kolejkami / bez); uwaga: OVS QoS (htb) koliduje z root qdisc tbf
+  3. Rezerwa ścieżki wideo: twarda / miękka (work-conserving) / obie jako podwarianty
+  4. Przenoszenie istniejących przepływów (rerouting) czy decyzja tylko przy starcie
+  5. Awaria: PortStatus czy też group fast-failover; scenariusz link down czy netem loss
 
 ## Następny krok
-- Bazowa aplikacja Ryu `controllers/fabric_base.py`: stałe datapath-id w exec OVS,
-statyczna mapa dpid→porty, ARP proxy bramy, proaktywne Flow Mods
-host→leaf→spine→leaf→host, ECMP przez group table `select` (punkt odniesienia dla B/C)
+- Bazowa aplikacja Ryu `controllers/fabric_base.py`: statyczna mapa dpid→porty,
+table-miss, ARP proxy bramy, proaktywne Flow Mods host→leaf→spine→leaf→host,
+ECMP przez group table `select` (punkt odniesienia dla B/C)
+- Wyrównać burst tbf leaf↔spine między A a SDN
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)
-- Usunąć zagnieżdżony, nieaktualny klon `sdn-traffic-engineering/`

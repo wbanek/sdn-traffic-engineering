@@ -9,142 +9,149 @@ topology:
       cmd: ryu-manager --verbose --ofp-tcp-listen-port 6653 ryu.app.ofctl_rest
 
 
-    spine1: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
-        - ovs-vsctl set-fail-mode br0 secure 
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2 
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth4 
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth4 root tbf rate 10mbit burst 32kbit latency 50ms
-    spine2: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+    spine1:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
         - ovs-vsctl set-fail-mode br0 secure
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2 
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth4 
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth4 root tbf rate 10mbit burst 32kbit latency 50ms
-    spine3: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000011
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth4  -- set Interface eth4  ofport_request=4
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth4  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
+    spine2:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
         - ovs-vsctl set-fail-mode br0 secure
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2 
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth4 
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth4 root tbf rate 10mbit burst 32kbit latency 50ms
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000012
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth4  -- set Interface eth4  ofport_request=4
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth4  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
+    spine3:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
+        - ovs-vsctl set-fail-mode br0 secure
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000013
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth4  -- set Interface eth4  ofport_request=4
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth4  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
 
-    leaf1: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+    leaf1:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
         - ovs-vsctl set-fail-mode br0 secure
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth10 
-        - ovs-vsctl add-port br0 eth11 
-        - ovs-vsctl add-port br0 eth12
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
-        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000001
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth10 -- set Interface eth10 ofport_request=10
+        - ovs-vsctl add-port br0 eth11 -- set Interface eth11 ofport_request=11
+        - ovs-vsctl add-port br0 eth12 -- set Interface eth12 ofport_request=12
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms
         - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
-    leaf2: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
+    leaf2:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
         - ovs-vsctl set-fail-mode br0 secure
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth10 
-        - ovs-vsctl add-port br0 eth11 
-        - ovs-vsctl add-port br0 eth12
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
-        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000002
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth10 -- set Interface eth10 ofport_request=10
+        - ovs-vsctl add-port br0 eth11 -- set Interface eth11 ofport_request=11
+        - ovs-vsctl add-port br0 eth12 -- set Interface eth12 ofport_request=12
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms
         - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
-    leaf3: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
+    leaf3:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
         - ovs-vsctl set-fail-mode br0 secure
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth10 
-        - ovs-vsctl add-port br0 eth11 
-        - ovs-vsctl add-port br0 eth12
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
-        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000003
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth10 -- set Interface eth10 ofport_request=10
+        - ovs-vsctl add-port br0 eth11 -- set Interface eth11 ofport_request=11
+        - ovs-vsctl add-port br0 eth12 -- set Interface eth12 ofport_request=12
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms
         - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
-    leaf4: 
-      kind: linux 
-      image: kathara/sdn:latest 
-      exec: 
-        - /usr/share/openvswitch/scripts/ovs-ctl start 
-        - ovs-vsctl add-br br0 
-        - ovs-vsctl set bridge br0 protocols=OpenFlow13 
-        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653 
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
+    leaf4:
+      kind: linux
+      image: kathara/sdn:latest
+      exec:
+        - /usr/share/openvswitch/scripts/ovs-ctl start
+        - ovs-vsctl add-br br0
         - ovs-vsctl set-fail-mode br0 secure
-        - ovs-vsctl add-port br0 eth1 
-        - ovs-vsctl add-port br0 eth2
-        - ovs-vsctl add-port br0 eth3 
-        - ovs-vsctl add-port br0 eth10 
-        - ovs-vsctl add-port br0 eth11 
-        - ovs-vsctl add-port br0 eth12
-        - tc qdisc add dev eth1 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth2 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth3 root tbf rate 10mbit burst 32kbit latency 50ms 
-        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms 
-        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms 
+        - ovs-vsctl set bridge br0 protocols=OpenFlow13
+        - ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000004
+        - ovs-vsctl add-port br0 eth1  -- set Interface eth1  ofport_request=1
+        - ovs-vsctl add-port br0 eth2  -- set Interface eth2  ofport_request=2
+        - ovs-vsctl add-port br0 eth3  -- set Interface eth3  ofport_request=3
+        - ovs-vsctl add-port br0 eth10 -- set Interface eth10 ofport_request=10
+        - ovs-vsctl add-port br0 eth11 -- set Interface eth11 ofport_request=11
+        - ovs-vsctl add-port br0 eth12 -- set Interface eth12 ofport_request=12
+        - tc qdisc add dev eth1  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth2  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth3  root tbf rate 10mbit  burst 100kbit latency 50ms
+        - tc qdisc add dev eth10 root tbf rate 100mbit burst 320kbit latency 50ms
+        - tc qdisc add dev eth11 root tbf rate 100mbit burst 320kbit latency 50ms
         - tc qdisc add dev eth12 root tbf rate 100mbit burst 320kbit latency 50ms
+        - ovs-vsctl set-controller br0 tcp:172.20.20.100:6653
 
     # --- HOSTY ---
     h1-video:
