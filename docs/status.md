@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-14)
+# Status projektu (ostatnia aktualizacja: 2026-10-15)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -33,8 +33,20 @@ host↔leaf 100mbit/burst 320kbit
 portów, porty LIVE, `fail_mode: secure`, `is_connected: true`, tbf burst 12800b
 - Własny obraz kontrolera `sdn-ryu:4.34` (`images/ryu/Dockerfile`, z `pbr`):
 `docker build -t sdn-ryu:4.34 images/ryu/`
-- Kontroler (mgmt 172.20.20.100:6653) uruchomiony z `ryu.app.ofctl_rest` (bez
-forwardingu)
+- Kontroler (mgmt 172.20.20.100:6653) uruchamia własną aplikację
+`controllers/controller_ryu.py` (klasa `Fabric`), montowaną bindem
+`../controllers:/controllers`; zmiana kodu → `docker restart clab-sdn-ryu-controller`
+- Aplikacja `Fabric` — zaimplementowane i przetestowane (2026-10-15):
+  - table-miss (prio 0 → CONTROLLER) na wszystkich przełącznikach
+  - drop IPv6 i LLDP (prio 100) — usuwa szum ND/MLD (63 pakiety odrzucone na leaf1
+  zamiast Packet-In)
+  - uczenie hostów z ruchu (ARP i IPv4) tylko na portach hostów leafów (10–12),
+  z walidacją podsieci (IP z 10.1.L.0/24 przyjmowany tylko z leafa L); pomijane 0.0.0.0
+  - proxy ARP: zapytanie o bramę 10.1.L.1 → odpowiedź wirtualnym `GW_MAC`
+  02:00:00:00:00:fe; zapytanie o znany host z tego samego leafa → jego prawdziwy MAC
+  - test: h1-video dostał MAC bramy, kontroler nauczył się h1-video
+  (10.1.1.10, leaf1, port 10); ping 10.1.1.10 → 10.1.3.10 dociera do kontrolera
+  jako Packet-In IPv4 (dalej brak forwardingu — zgodnie z oczekiwaniem)
 - Podmiana samego kontrolera bez ruszania labu:
 `containerlab destroy/deploy -t sdn.clab.yaml --node-filter ryu-controller`
 - Ryu 4.34 także na hoście w `.venv` (Python 3.9) — do podpowiedzi i lintowania w IDE;
@@ -47,8 +59,12 @@ uruchamianie i pomiary w kontenerze:
 - Ściągawka Ryu (dekorator `@set_ev_cls`, fazy, zdarzenia, skróty): `docs/ryu-sciagawka.md`
 
 ## Nie działa / nie zrobione
-- Własna aplikacja Ryu (statyczna mapa topologii, ARP proxy bramy 10.1.L.1,
-proaktywne Flow Mods, table-miss) — brak, więc brak łączności host↔host w SDN
+- Aktywne odpytywanie ARP przez kontroler — brak: zapytanie o nieznany host jest
+ignorowane (host musi najpierw sam coś wysłać). Do zrobienia: `_resolve()` (who-has od
+„bramy” na porty hostów leafa docelowego, limit 1/s) + lista oczekujących (`pending`)
+odpowiadanych po nauczeniu; to samo dla IPv4 do nieznanego hosta
+- Routing IP w SDN — brak (pakiety IPv4 kończą w kontrolerze), więc brak łączności
+host↔host
 - Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte; logika C w fazie analizy
 (decyzje otwarte, patrz niżej)
 - **Niespójny burst tbf na łączach leaf↔spine: A = 32kbit, SDN = 100kbit** — do
@@ -96,6 +112,13 @@ pomijać w statystykach portów
 - OVS pokazuje DSCP w `dump-flows` jako `nw_tos` = DSCP×4 (EF 46 → 184, AF41 34 → 136)
 - Bez reguły table-miss przełącznik w `fail-mode secure` odrzuca wszystko i nie wysyła
 Packet-In
+- containerlab: klucz to `binds:` (nie `bind:`), ścieżka względem katalogu pliku
+topologii; zmiana `binds`/`cmd` wymaga odtworzenia kontenera (destroy/deploy
+`--node-filter`), zmiana samego `.py` — tylko `docker restart`
+- OVS ma `n_buffers:0`, a table-miss używa `OFPCML_NO_BUFFER` → `buffer_id` w FlowMod
+jest zbędny (zawsze `OFP_NO_BUFFER`); pierwszy pakiet trzeba odesłać Packet-Out
+- Kontroler bez routingu zalewa log: każdy pakiet IPv4 to Packet-In (log na poziomie
+info przy każdym pakiecie) — po dodaniu reguł IP problem znika
 
 ## Odłożone na po spotkaniu z promotorem
 - Fix TSO/GRO (`ethtool -K <ethX> tso off gso off gro off` na wszystkich interfejsach
@@ -112,9 +135,14 @@ Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
   5. Awaria: PortStatus czy też group fast-failover; scenariusz link down czy netem loss
 
 ## Następny krok
-- Bazowa aplikacja Ryu `controllers/fabric_base.py`: statyczna mapa dpid→porty,
-table-miss, ARP proxy bramy, proaktywne Flow Mods host→leaf→spine→leaf→host,
-ECMP przez group table `select` (punkt odniesienia dla B/C)
+- `controller_ryu.py`: aktywne odpytywanie ARP (`_resolve` + `pending`)
+- Routing IP: na leafie docelowym reguła `ipv4_dst=host → eth_src=GW_MAC,
+eth_dst=MAC hosta, output port` (instalowana w `_learn`); na spine'ach proaktywnie
+`ipv4_dst=10.1.D.0/24 → port D`; na leafie źródłowym wybór uplinku — najpierw ECMP przez
+group table `select` (punkt odniesienia dla B/C)
+- Drobne porządki w kodzie: nieużywany import `hub`, nieaktualne komentarze/docstringi
+(„Ignorowanie pakietów ARP”, `_send_arp` „Wysyłanie zapytania”), brak sprawdzenia
+`ipv4_pkt is None`
 - Wyrównać burst tbf leaf↔spine między A a SDN
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)

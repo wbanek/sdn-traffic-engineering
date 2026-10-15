@@ -6,7 +6,9 @@ topology:
       kind: linux 
       image: sdn-ryu:4.34
       mgmt-ipv4: 172.20.20.100
-      cmd: ryu-manager --verbose --ofp-tcp-listen-port 6653 ryu.app.ofctl_rest
+      binds:
+        - ../controllers:/controllers
+      cmd: ryu-manager --verbose --ofp-tcp-listen-port 6653 /controllers/controller_ryu.py
 
 
     spine1:
