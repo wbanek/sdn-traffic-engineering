@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-15)
+# Status projektu (ostatnia aktualizacja: 2026-10-17)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -47,6 +47,15 @@ portów, porty LIVE, `fail_mode: secure`, `is_connected: true`, tbf burst 12800b
   - test: h1-video dostał MAC bramy, kontroler nauczył się h1-video
   (10.1.1.10, leaf1, port 10); ping 10.1.1.10 → 10.1.3.10 dociera do kontrolera
   jako Packet-In IPv4 (dalej brak forwardingu — zgodnie z oczekiwaniem)
+- Routing IP — część zrobiona (commit 464ddcf, 2026-10-17):
+  - spine'y: proaktywnie przy połączeniu `ipv4_dst=10.1.L.0/24 → port L` (prio 50);
+  zweryfikowane w `dump-flows` spine1 (4 reguły)
+  - leaf docelowy: przy nauczeniu hosta (`_learn` → `_install_host_rule`) reguła
+  `ipv4_dst=host → eth_src=GW_MAC, eth_dst=MAC hosta, dec_ttl, output port hosta`
+  (prio 50); zweryfikowane: reguła dla 10.1.3.10 na leaf3 port 10
+  - słownik `datapaths` (dpid → datapath) uzupełniany przy połączeniu; log
+  „Switch dpid=… connected” — 7/7 przełączników
+  - stałe `SPINES = {0x11, 0x12, 0x13}`, `UP_LINK` (spine → port uplinku na leafie)
 - Podmiana samego kontrolera bez ruszania labu:
 `containerlab destroy/deploy -t sdn.clab.yaml --node-filter ryu-controller`
 - Ryu 4.34 także na hoście w `.venv` (Python 3.9) — do podpowiedzi i lintowania w IDE;
@@ -63,8 +72,13 @@ uruchamianie i pomiary w kontenerze:
 ignorowane (host musi najpierw sam coś wysłać). Do zrobienia: `_resolve()` (who-has od
 „bramy” na porty hostów leafa docelowego, limit 1/s) + lista oczekujących (`pending`)
 odpowiadanych po nauczeniu; to samo dla IPv4 do nieznanego hosta
-- Routing IP w SDN — brak (pakiety IPv4 kończą w kontrolerze), więc brak łączności
-host↔host
+- Routing IP — brak wyboru uplinku na leafie źródłowym: pakiet do 10.1.D.0/24
+(D ≠ lokalny leaf) trafia na table-miss i kończy w kontrolerze → brak łączności
+między leafami (`UP_LINK` zdefiniowany, jeszcze nieużywany)
+- Ruch w obrębie jednego leafa przechodzi przez regułę hosta (eth_src=GW_MAC, TTL−1 —
+traktowany jak routowany); jeszcze nie przetestowany pingiem
+- Reguła hosta istnieje tylko dla hostów nauczonych w bieżącym uruchomieniu kontrolera
+(restart kasuje `hosts`; host pojawia się ponownie dopiero, gdy sam coś wyśle)
 - Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte; logika C w fazie analizy
 (decyzje otwarte, patrz niżej)
 - **Niespójny burst tbf na łączach leaf↔spine: A = 32kbit, SDN = 100kbit** — do
@@ -135,14 +149,15 @@ Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
   5. Awaria: PortStatus czy też group fast-failover; scenariusz link down czy netem loss
 
 ## Następny krok
+- Leaf źródłowy: wybór uplinku dla `ipv4_dst=10.1.D.0/24` (D ≠ lokalny) — najpierw ECMP
+przez group table `select` z bucketami na porty 1–3 (punkt odniesienia dla B/C);
+reguła prio niższy niż reguły hostów (np. 40), żeby ruch lokalny nie szedł w górę
+- Test end-to-end: ping h1-video ↔ h1-bg1 (ten sam leaf) i h1-video ↔ h4-video
+(przez spine), `dump-flows` z licznikami n_packets na leafach i spine'ach
 - `controller_ryu.py`: aktywne odpytywanie ARP (`_resolve` + `pending`)
-- Routing IP: na leafie docelowym reguła `ipv4_dst=host → eth_src=GW_MAC,
-eth_dst=MAC hosta, output port` (instalowana w `_learn`); na spine'ach proaktywnie
-`ipv4_dst=10.1.D.0/24 → port D`; na leafie źródłowym wybór uplinku — najpierw ECMP przez
-group table `select` (punkt odniesienia dla B/C)
-- Drobne porządki w kodzie: nieużywany import `hub`, nieaktualne komentarze/docstringi
-(„Ignorowanie pakietów ARP”, `_send_arp` „Wysyłanie zapytania”), brak sprawdzenia
-`ipv4_pkt is None`
+- Drobne porządki w kodzie: nieużywane importy (`hub`, `tcp`, `udp` — te dwa pod
+przyszłe reguły 5-tuple), nieaktualne komentarze/docstringi („Ignorowanie pakietów ARP”,
+`_send_arp` „Wysyłanie zapytania”), brak sprawdzenia `ipv4_pkt is None`
 - Wyrównać burst tbf leaf↔spine między A a SDN
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)
