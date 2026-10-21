@@ -1,5 +1,7 @@
 import ipaddress
+import os 
 
+from topo import Topology
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls       
@@ -7,6 +9,7 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet, ethernet, ether_types, arp, ipv4, tcp, udp
 from ryu.lib import hub
 
+TOPO_FILE = os.environ.get("TOPO_FILE", "/topologies/sdn.clab.yaml")
 
 GW_MAC = "02:00:00:00:00:fe"  # Stały adres MAC bramy
 LEAVES = {1, 2, 3, 4}  # numer leaf
@@ -34,6 +37,10 @@ class Fabric(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(Fabric, self).__init__(*args, **kwargs)
+        self.topo = Topology(TOPO_FILE)
+        self.logger.info("Topology %s: %d switches, %d hosts",
+                        TOPO_FILE, len(self.topo.switches), len(self.topo.hosts))
+
         self.datapaths = {}  # Słownik przechowujący informacje o przełącznikach
         self.hosts = {} # Słownik przechowujący informacje o hostach (ip -> (mac, leaf, port))
 
