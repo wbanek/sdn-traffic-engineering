@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-17)
+# Status projektu (ostatnia aktualizacja: 2026-10-22)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -33,29 +33,34 @@ host↔leaf 100mbit/burst 320kbit
 portów, porty LIVE, `fail_mode: secure`, `is_connected: true`, tbf burst 12800b
 - Własny obraz kontrolera `sdn-ryu:4.34` (`images/ryu/Dockerfile`, z `pbr`):
 `docker build -t sdn-ryu:4.34 images/ryu/`
+- Stałe MAC hostów w `sdn.clab.yaml` (exec: `ip link set dev eth1 address`):
+`02:00:0L:00:00:HH` (L = numer leafa, HH = ostatni oktet IP hex: 0a/0b/0c)
 - Kontroler (mgmt 172.20.20.100:6653) uruchamia własną aplikację
-`controllers/controller_ryu.py` (klasa `Fabric`), montowaną bindem
-`../controllers:/controllers`; zmiana kodu → `docker restart clab-sdn-ryu-controller`
-- Aplikacja `Fabric` — zaimplementowane i przetestowane (2026-10-15):
-  - table-miss (prio 0 → CONTROLLER) na wszystkich przełącznikach
-  - drop IPv6 i LLDP (prio 100) — usuwa szum ND/MLD (63 pakiety odrzucone na leaf1
-  zamiast Packet-In)
-  - uczenie hostów z ruchu (ARP i IPv4) tylko na portach hostów leafów (10–12),
-  z walidacją podsieci (IP z 10.1.L.0/24 przyjmowany tylko z leafa L); pomijane 0.0.0.0
-  - proxy ARP: zapytanie o bramę 10.1.L.1 → odpowiedź wirtualnym `GW_MAC`
-  02:00:00:00:00:fe; zapytanie o znany host z tego samego leafa → jego prawdziwy MAC
-  - test: h1-video dostał MAC bramy, kontroler nauczył się h1-video
-  (10.1.1.10, leaf1, port 10); ping 10.1.1.10 → 10.1.3.10 dociera do kontrolera
-  jako Packet-In IPv4 (dalej brak forwardingu — zgodnie z oczekiwaniem)
-- Routing IP — część zrobiona (commit 464ddcf, 2026-10-17):
-  - spine'y: proaktywnie przy połączeniu `ipv4_dst=10.1.L.0/24 → port L` (prio 50);
-  zweryfikowane w `dump-flows` spine1 (4 reguły)
-  - leaf docelowy: przy nauczeniu hosta (`_learn` → `_install_host_rule`) reguła
-  `ipv4_dst=host → eth_src=GW_MAC, eth_dst=MAC hosta, dec_ttl, output port hosta`
-  (prio 50); zweryfikowane: reguła dla 10.1.3.10 na leaf3 port 10
-  - słownik `datapaths` (dpid → datapath) uzupełniany przy połączeniu; log
-  „Switch dpid=… connected” — 7/7 przełączników
-  - stałe `SPINES = {0x11, 0x12, 0x13}`, `UP_LINK` (spine → port uplinku na leafie)
+`controllers/controller_ryu.py` (klasa `Fabric`); binds: `../controllers:/controllers`
+i `../topologies:/topologies:ro`, plik topologii wskazuje `env: TOPO_FILE`;
+zmiana kodu → `docker restart clab-sdn-ryu-controller`
+- **Kontroler uniwersalny (niezależny od topologii)** — 2026-10-22:
+  - `controllers/topo.py` (klasa `Topology`): wczytuje plik clab i z komend exec + `links`
+  buduje model sieci: przełączniki (dpid z `datapath-id`, porty z `ofport_request`),
+  graf `adj` (dpid → {sąsiad: port}), hosty (IP, MAC, podsieć, brama, przełącznik, port),
+  bramy per przełącznik brzegowy; `next_hops_to(dst)` = drzewo najkrótszych ścieżek (BFS
+  od celu, remis → najmniejszy dpid) — wolne od pętli w każdej topologii (Clos, mesh)
+  - w `controller_ryu.py` brak założeń o Clos (usunięte `LEAVES`, `SPINES`, `HOST_PORTS`,
+  `UP_LINK`, `gw_ip()`, `leaf_of()`, `self.hosts`); jedyna stała: `GW_MAC`
+  02:00:00:00:00:fe (wirtualny MAC bramy)
+  - reguły proaktywne przy połączeniu przełącznika (nieznany dpid → ostrzeżenie, pomijany):
+  prio 100 drop IPv6/LLDP; prio 60 reguła hosta (`ipv4_dst=host → eth_src=GW_MAC,
+  eth_dst=MAC hosta, dec_ttl, port hosta`) na jego przełączniku; prio 50 trasa domyślna
+  do podsieci każdego innego przełącznika brzegowego (port z `next_hops_to`); prio 0
+  table-miss → kontroler
+  - proxy ARP z topologii: brama (z `default via` hostów) → `GW_MAC`; host z tego samego
+  przełącznika → jego MAC; Packet-In obsługiwany tylko z portów hostów
+  - `_learn` tylko weryfikuje ruch względem topologii (ostrzeżenie „Unexpected host” przy
+  złym przełączniku/porcie, „MAC … changed” + nowa reguła przy zmianie MAC)
+  - test w labie (2026-10-22): ping w obrębie leafa (h1-video → 10.1.1.11) i między
+  leafami (h1-video → 10.1.4.10, → 10.1.3.12) — 0% strat; brak błędów w logu;
+  `traceroute` pokazuje `1 *`, `2 10.1.4.10` (patrz pułapki)
+  - trasa domyślna w Clos zawsze przez spine1 — rozkładanie ruchu dopiero w B/C
 - Podmiana samego kontrolera bez ruszania labu:
 `containerlab destroy/deploy -t sdn.clab.yaml --node-filter ryu-controller`
 - Ryu 4.34 także na hoście w `.venv` (Python 3.9) — do podpowiedzi i lintowania w IDE;
@@ -68,19 +73,15 @@ uruchamianie i pomiary w kontenerze:
 - Ściągawka Ryu (dekorator `@set_ev_cls`, fazy, zdarzenia, skróty): `docs/ryu-sciagawka.md`
 
 ## Nie działa / nie zrobione
-- Aktywne odpytywanie ARP przez kontroler — brak: zapytanie o nieznany host jest
-ignorowane (host musi najpierw sam coś wysłać). Do zrobienia: `_resolve()` (who-has od
-„bramy” na porty hostów leafa docelowego, limit 1/s) + lista oczekujących (`pending`)
-odpowiadanych po nauczeniu; to samo dla IPv4 do nieznanego hosta
-- Routing IP — brak wyboru uplinku na leafie źródłowym: pakiet do 10.1.D.0/24
-(D ≠ lokalny leaf) trafia na table-miss i kończy w kontrolerze → brak łączności
-między leafami (`UP_LINK` zdefiniowany, jeszcze nieużywany)
-- Ruch w obrębie jednego leafa przechodzi przez regułę hosta (eth_src=GW_MAC, TTL−1 —
-traktowany jak routowany); jeszcze nie przetestowany pingiem
-- Reguła hosta istnieje tylko dla hostów nauczonych w bieżącym uruchomieniu kontrolera
-(restart kasuje `hosts`; host pojawia się ponownie dopiero, gdy sam coś wyśle)
+- Wielościeżkowość w SDN — brak: cały ruch idzie trasą domyślną (jedno drzewo
+najkrótszych ścieżek na cel); brak k ścieżek, instalacji ścieżki per przepływ
+i monitoringu obciążenia łączy
 - Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte; logika C w fazie analizy
 (decyzje otwarte, patrz niżej)
+- Topologia mesh (sugestia promotora) — kontroler już ją obsłuży, ale samej topologii
+(clab dla FRR i OVS, konfiguracje FRR) jeszcze nie ma
+- Ruch w obrębie jednego przełącznika przechodzi przez regułę hosta (eth_src=GW_MAC,
+TTL−1 — traktowany jak routowany)
 - **Niespójny burst tbf na łączach leaf↔spine: A = 32kbit, SDN = 100kbit** — do
 wyrównania przed pomiarami porównawczymi
 - Test TCP ~10 Mb/s — niezaliczony (TSO/GRO, patrz pułapki)
@@ -133,8 +134,28 @@ topologii; zmiana `binds`/`cmd` wymaga odtworzenia kontenera (destroy/deploy
 jest zbędny (zawsze `OFP_NO_BUFFER`); pierwszy pakiet trzeba odesłać Packet-Out
 - Kontroler bez routingu zalewa log: każdy pakiet IPv4 to Packet-In (log na poziomie
 info przy każdym pakiecie) — po dodaniu reguł IP problem znika
+- `traceroute` przez fabric SDN: `1 *`, potem cel — `dec_ttl` jest tylko w regule hosta
+(cały fabric = jeden logiczny router), a OVS przy TTL 0 nie odsyła ICMP Time Exceeded,
+tylko Packet-In `OFPR_INVALID_TTL` z uplinku, który kontroler ignoruje. Na pomiary nie
+wpływa; w wariancie A traceroute pokaże 3 hopy
+- Ryu wczytuje kod tylko przy starcie — po każdej zmianie `.py` restart kontenera;
+porównać `stat -c %y controller_ryu.py` z `docker inspect … StartedAt` (UTC!)
+- `ipv4_dst` z maską w Ryu: krotka `(adres, maska)`, np.
+`(str(net.network_address), str(net.netmask))`
+- Test `__init__` kontrolera bez labu (z katalogu `controllers/`, ścieżki względne!):
+`TOPO_FILE=../topologies/sdn.clab.yaml ../.venv/bin/python -c "import controller_ryu as c; c.Fabric()"`;
+bez aktywnego venv nie ma polecenia `python` (tylko systemowy `python3` 3.14)
+- git: puste pliki w `.git/objects` po nagłym wyłączeniu VM (2026-10-21) — naprawa:
+kopia `.git`, `find .git/objects -type f -empty -delete`, `git fetch origin`, `git fsck --full`
 
-## Odłożone na po spotkaniu z promotorem
+## Ustalenia ze spotkania z promotorem (2026-10-21)
+- Sieć może być **statyczna** — topologia i rozmieszczenie hostów nie zmieniają się
+w trakcie eksperymentu
+- Kontroler **może znać z góry całą sieć** (gdzie jest każdy host: IP, MAC, leaf, port) —
+uczenie z ruchu i aktywne odpytywanie ARP nie są wymagane
+- Warianty A (OSPF+ECMP), B (SDN+LLLB), C (SDN+QoS-Aware) — zaakceptowane bez zmian
+
+## Otwarte (nieomówione na spotkaniu)
 - Fix TSO/GRO (`ethtool -K <ethX> tso off gso off gro off` na wszystkich interfejsach
 labowych; do utrwalenia w exec obu topologii, żeby A/B/C miały identyczne warunki).
 Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
@@ -149,15 +170,18 @@ Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
   5. Awaria: PortStatus czy też group fast-failover; scenariusz link down czy netem loss
 
 ## Następny krok
-- Leaf źródłowy: wybór uplinku dla `ipv4_dst=10.1.D.0/24` (D ≠ lokalny) — najpierw ECMP
-przez group table `select` z bucketami na porty 1–3 (punkt odniesienia dla B/C);
-reguła prio niższy niż reguły hostów (np. 40), żeby ruch lokalny nie szedł w górę
-- Test end-to-end: ping h1-video ↔ h1-bg1 (ten sam leaf) i h1-video ↔ h4-video
-(przez spine), `dump-flows` z licznikami n_packets na leafach i spine'ach
-- `controller_ryu.py`: aktywne odpytywanie ARP (`_resolve` + `pending`)
-- Drobne porządki w kodzie: nieużywane importy (`hub`, `tcp`, `udp` — te dwa pod
-przyszłe reguły 5-tuple), nieaktualne komentarze/docstringi („Ignorowanie pakietów ARP”,
-`_send_arp` „Wysyłanie zapytania”), brak sprawdzenia `ipv4_pkt is None`
+- Krok 5: k ścieżek w `topo.py` — lista alternatywnych ścieżek między przełącznikami
+brzegowymi (nie tylko najkrótsza); wspólna baza dla B i C, działa też na mesh
+- Krok 6: instalacja ścieżki per przepływ — Packet-In na przełączniku źródłowym →
+wybór ścieżki → reguła 5-tuple na każdym hopie (instalowana od końca), prio > 50,
+`idle_timeout`
+- Krok 7: monitor obciążenia — `OFPPortStatsRequest` co 1 s, wykorzystanie łączy
+z Δtx_bytes względem 10 Mb/s
+- Krok 8: wariant B (LLLB) — ścieżka o najmniejszym max(wykorzystanie łączy na ścieżce)
+- Krok 9: wariant C (QoS-Aware) — po rozstrzygnięciu decyzji otwartych
+- Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, nieaktualne komentarze
+(„Ignorowanie pakietów ARP”, „są pętlą”, `_send_arp` „Wysyłanie zapytania”, „leaf”
+w `_install_host_rule`), log reguły hosta z nazwą przełącznika, spacje na końcu linii
 - Wyrównać burst tbf leaf↔spine między A a SDN
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)
