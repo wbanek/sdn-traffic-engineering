@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-22)
+# Status projektu (ostatnia aktualizacja: 2026-10-26)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -60,7 +60,24 @@ zmiana kodu → `docker restart clab-sdn-ryu-controller`
   - test w labie (2026-10-22): ping w obrębie leafa (h1-video → 10.1.1.11) i między
   leafami (h1-video → 10.1.4.10, → 10.1.3.12) — 0% strat; brak błędów w logu;
   `traceroute` pokazuje `1 *`, `2 10.1.4.10` (patrz pułapki)
-  - trasa domyślna w Clos zawsze przez spine1 — rozkładanie ruchu dopiero w B/C
+  - trasa domyślna w Clos zawsze przez spine1 — po kroku 6 używana tylko na tranzycie
+  jako zapas dla pierwszego pakietu
+- **Wielościeżkowość: wybór ścieżki per przepływ** — 2026-10-26:
+  - `topo.py`: `hop_count(src, dst)` (BFS), `paths(src, dst, k=4, slack=1)` — ścieżki
+  proste (DFS) o długości ≤ najkrótsza + slack, sortowane (długość, dpid); `path_ports(path)`
+  → `[(dpid, port wyjściowy), …]` bez ostatniego przełącznika. Clos: `paths(1, 4)` =
+  `[[1,17,4], [1,18,4], [1,19,4]]`; `slack=2` daje tranzyt przez leaf (dlatego slack=1);
+  test na sztucznym mesh: 2 najkrótsze + 2 o hop dłuższe
+  - `controller_ryu.py`: `self.paths[(src, dst)]` liczone raz w `__init__` dla każdej pary
+  przełączników brzegowych (Clos: 12 par)
+  - przełącznik brzegowy: obca podsieć (prio 50) → CONTROLLER; tranzyt: trasa domyślna
+  - `_route_flow`: klucz 5-tuple `(proto, src, dst, sport, dport)` (porty `None` dla ICMP),
+  `select_path` (na razie round-robin per para), reguły prio 70 z 5-tuple na każdym hopie
+  od końca ścieżki, `idle_timeout=10`, Packet-Out pierwszego pakietu wprost na port
+  uplinku; log `Flow (…) -> leaf1 -> spine2 -> leaf4`
+  - test (2026-10-26): 48/48 pingów (4 hosty źródłowe × 12 celów), trzy pingi do
+  10.1.4.10/11/12 → spine1, spine2, spine3; odpowiedzi z leaf4 własnym licznikiem
+  (asymetria jak w ECMP); reguły 70 z rosnącym `n_packets` na leaf1, spine'ach, leaf4
 - Podmiana samego kontrolera bez ruszania labu:
 `containerlab destroy/deploy -t sdn.clab.yaml --node-filter ryu-controller`
 - Ryu 4.34 także na hoście w `.venv` (Python 3.9) — do podpowiedzi i lintowania w IDE;
@@ -73,9 +90,8 @@ uruchamianie i pomiary w kontenerze:
 - Ściągawka Ryu (dekorator `@set_ev_cls`, fazy, zdarzenia, skróty): `docs/ryu-sciagawka.md`
 
 ## Nie działa / nie zrobione
-- Wielościeżkowość w SDN — brak: cały ruch idzie trasą domyślną (jedno drzewo
-najkrótszych ścieżek na cel); brak k ścieżek, instalacji ścieżki per przepływ
-i monitoringu obciążenia łączy
+- Monitoring obciążenia łączy — brak; wybór ścieżki to na razie round-robin, który nie
+patrzy na obciążenie
 - Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte; logika C w fazie analizy
 (decyzje otwarte, patrz niżej)
 - Topologia mesh (sugestia promotora) — kontroler już ją obsłuży, ale samej topologii
@@ -147,6 +163,21 @@ porównać `stat -c %y controller_ryu.py` z `docker inspect … StartedAt` (UTC!
 bez aktywnego venv nie ma polecenia `python` (tylko systemowy `python3` 3.14)
 - git: puste pliki w `.git/objects` po nagłym wyłączeniu VM (2026-10-21) — naprawa:
 kopia `.git`, `find .git/objects -type f -empty -delete`, `git fetch origin`, `git fsck --full`
+- **Po restarcie maszyny lab jest martwy**: Docker sam podnosi kontenery, ale bez łączy
+veth i bez `exec` (brak eth1+, OVS nie działa — `db.sock: Connection refused`, kontroler
+bez połączeń). Zawsze `sudo containerlab deploy -t sdn.clab.yaml --reconfigure`
+(albo `destroy` przed wyłączeniem VM). Zdarzyło się 2026-10-12 i 2026-10-26
+- Po deployu odczekać, aż przełączniki się połączą — ping w pierwszych sekundach daje
+100% strat; sprawdzenie: `docker logs clab-sdn-ryu-controller 2>&1 | grep -c "connected from"` = 7
+- Wymagania matcha OF1.3: `tcp_*`/`udp_*` tylko razem z `eth_type=0x0800` i `ip_proto`
+(inaczej `OFPBMC_BAD_PREREQ`); OVS pokazuje to jako `udp,…,tp_src=…,tp_dst=…`
+- Packet-Out pierwszego pakietu wprost na port, nie `OFPP_TABLE` — reguła 70 może jeszcze
+nie być wgrana, pakiet wróciłby do kontrolera; tranzyt ma trasy domyślne jako zapas,
+bo reguły na różnych przełącznikach mogą dojść w dowolnej kolejności
+- Przepływy w praktyce: `ping` do tego samego hosta = jeden przepływ (ICMP bez portów),
+kolejne pingi w ciągu `idle_timeout` idą tą samą ścieżką bez Packet-In; `iperf3` = co
+najmniej 2 przepływy (TCP sterujący + UDP/TCP dane) w każdą stronę — kanał sterujący też
+zużywa krok round-robin
 
 ## Ustalenia ze spotkania z promotorem (2026-10-21)
 - Sieć może być **statyczna** — topologia i rozmieszczenie hostów nie zmieniają się
@@ -170,18 +201,15 @@ Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
   5. Awaria: PortStatus czy też group fast-failover; scenariusz link down czy netem loss
 
 ## Następny krok
-- Krok 5: k ścieżek w `topo.py` — lista alternatywnych ścieżek między przełącznikami
-brzegowymi (nie tylko najkrótsza); wspólna baza dla B i C, działa też na mesh
-- Krok 6: instalacja ścieżki per przepływ — Packet-In na przełączniku źródłowym →
-wybór ścieżki → reguła 5-tuple na każdym hopie (instalowana od końca), prio > 50,
-`idle_timeout`
-- Krok 7: monitor obciążenia — `OFPPortStatsRequest` co 1 s, wykorzystanie łączy
-z Δtx_bytes względem 10 Mb/s
-- Krok 8: wariant B (LLLB) — ścieżka o najmniejszym max(wykorzystanie łączy na ścieżce)
+- Krok 7: monitor obciążenia — wątek `hub.spawn`, `OFPPortStatsRequest` co 1 s do
+wszystkich przełączników, handler `EventOFPPortStatsReply`: wykorzystanie każdego łącza
+(przełącznik, port) z Δtx_bytes względem 10 Mb/s
+- Krok 8: wariant B (LLLB) — `select_path` wybiera ścieżkę o najmniejszym
+max(wykorzystanie łączy na ścieżce)
 - Krok 9: wariant C (QoS-Aware) — po rozstrzygnięciu decyzji otwartych
-- Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, nieaktualne komentarze
-(„Ignorowanie pakietów ARP”, „są pętlą”, `_send_arp` „Wysyłanie zapytania”, „leaf”
-w `_install_host_rule`), log reguły hosta z nazwą przełącznika, spacje na końcu linii
+- Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, literówka w komentarzu
+`_handle_arp` („zapytaniam”), docstring `_install_host_rule` („w danym leafie”),
+spacje na końcu linii
 - Wyrównać burst tbf leaf↔spine między A a SDN
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)

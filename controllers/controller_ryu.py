@@ -5,7 +5,7 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls       
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import packet, ethernet, ether_types, arp, ipv4
+from ryu.lib.packet import packet, ethernet, ether_types, arp, ipv4, tcp, udp, in_proto
 
 TOPO_FILE = os.environ.get("TOPO_FILE", "/topologies/sdn.clab.yaml")
 
@@ -24,6 +24,12 @@ class Fabric(app_manager.RyuApp):
 
         # Trasy domyślne: dla każdego przełącznika brzegowego drzewo najkrótszych ścieżek do niego
         self.routes = {edge: self.topo.next_hops_to(edge) for edge in self.topo.gateways}
+
+        # k ścieżek między każdą parą przełączników brzegowych
+        edges = sorted(self.topo.gateways)
+        self.paths = {(src, dst): self.topo.paths(src, dst)
+                      for src in edges for dst in edges if src != dst}
+        self.rr = {} # licznik round-robin
 
         # Słownik przechowujący informacje o przełącznikach
         self.datapaths = {}
@@ -62,7 +68,15 @@ class Fabric(app_manager.RyuApp):
             _, net = self.topo.gateways[edge]
             match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
                                     ipv4_dst=(str(net.network_address), str(net.netmask)))
-            actions = [parser.OFPActionOutput(next_hops[dpid])]
+
+            if self.topo.is_edge(dpid):
+                # przełącznik brzegowy: nowy przepływ do obcej podsieci → decyzja kontrolera
+                actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                                  ofproto.OFPCML_NO_BUFFER)]
+            else:
+                # tranzyt: trasa domyślna
+                actions = [parser.OFPActionOutput(next_hops[dpid])]
+        
             self.add_flow(datapath, 50, match, actions)
 
         # Doręczenie do lokalnych hostów (MAC znany z topologii)
@@ -129,6 +143,12 @@ class Fabric(app_manager.RyuApp):
             if ipv4_pkt is None:
                 return
             self._learn(ipv4_pkt.src, eth.src, datapath.id, in_port)
+
+            dst_edge = self.topo.edge_of(ipv4_pkt.dst)
+            if dst_edge is not None and dst_edge != datapath.id:
+                self._route_flow(datapath, in_port, pkt, ipv4_pkt, msg.data, dst_edge)
+                return
+
             self.logger.debug("Unrouted IPv4 on %s port %d: %s -> %s",
                               self.topo.names[datapath.id], in_port, ipv4_pkt.src, ipv4_pkt.dst)
 
@@ -138,7 +158,7 @@ class Fabric(app_manager.RyuApp):
         self._learn(pkt_arp.src_ip, pkt_arp.src_mac, datapath.id, in_port)
 
         if pkt_arp.opcode != arp.ARP_REQUEST or pkt_arp.src_ip == pkt_arp.dst_ip:
-            return  # Ignorowanie pakietów ARP, które nie są zapytaniam
+            return  # Ignorowanie pakietów ARP, które nie są zapytaniem
         
         gw_ip, _ = self.topo.gateways[datapath.id]
         host = self.topo.hosts.get(pkt_arp.dst_ip)
@@ -189,3 +209,64 @@ class Fabric(app_manager.RyuApp):
         datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, 
                                             in_port=ofproto.OFPP_CONTROLLER, 
                                             actions=actions, data=pkt.data))
+
+    def _flow_key(self, pkt, ip_pkt):
+        """(protokół, IP src, IP dst, port src, port dst); porty None, gdy ich brak (ICMP)"""
+        src_port = None
+        dst_port = None
+
+        l4 = pkt.get_protocol(tcp.tcp) or pkt.get_protocol(udp.udp)
+        if l4 is not None:
+            src_port = l4.src_port
+            dst_port = l4.dst_port
+        return (ip_pkt.proto, ip_pkt.src, ip_pkt.dst, src_port, dst_port)
+
+    def _flow_match(self, parser, flow):
+        """OFPMatch dla przepływu"""
+        proto, src, dst, src_port, dst_port = flow 
+        fields = {"eth_type": ether_types.ETH_TYPE_IP, "ip_proto": proto,
+                  "ipv4_src": src, "ipv4_dst": dst}
+        if proto == in_proto.IPPROTO_TCP:
+            fields.update(tcp_src=src_port, tcp_dst=dst_port)
+        elif proto == in_proto.IPPROTO_UDP:
+            fields.update(udp_src=src_port, udp_dst=dst_port)
+        return parser.OFPMatch(**fields)
+
+    def select_path(self, flow, src, dst):
+        """Wybór ścieżki dla przepływu"""
+        paths = self.paths[(src, dst)]
+
+        i = self.rr.get((src, dst), 0)
+        self.rr[(src, dst)] = i + 1
+        
+        return paths[i % len(paths)]
+
+    def _route_flow(self, datapath, in_port, pkt, ip_pkt, data, dst_edge):
+        """Nowy przepływ do obcej podsieci: wybór ścieżki, reguły na każdym hopie, Packet-Out"""
+        src_edge = datapath.id
+        flow = self._flow_key(pkt, ip_pkt)
+        path = self.select_path(flow, src_edge, dst_edge)
+        hops = self.topo.path_ports(path)
+
+        # Reguły od końca ścieżki do początku
+        for dpid, out_port in reversed(hops):
+            dp = self.datapaths.get(dpid)
+            if dp is None:
+                self.logger.warning("Switch %s not connected - flow %s dropped",
+                                    self.topo.names[dpid], flow)
+                return
+            parser = dp.ofproto_parser
+            self.add_flow(dp, 70, self._flow_match(parser, flow),
+                          [parser.OFPActionOutput(out_port)], idle_timeout=10)
+
+        # Pierwszy pakiet przyszedł do kontrolera, więc trzeba go samodzielnie wysłać dalej
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        datapath.send_msg(parser.OFPPacketOut(
+            datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, in_port=in_port,
+            actions=[parser.OFPActionOutput(hops[0][1])], data = data))
+
+        self.logger.info("Flow %s -> %s", flow,
+                         " -> ".join(self.topo.names[d] for d in path))
+
