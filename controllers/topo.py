@@ -97,3 +97,49 @@ class Topology:
                     out[nb] = self.adj[nb][cur]
                     queue.append(nb)
         return out
+
+    def hop_count(self, src, dst):
+        """Liczba hopów najkrótszej ścieżki src -> dst albo None, gdy brak połączenia"""
+        dist = {src: 0}
+        queue = deque([src])
+        while queue:
+            cur = queue.popleft()
+            if cur == dst:
+                return dist[cur]
+            for nb in self.adj[cur]:
+                if nb not in dist:
+                    dist[nb] = dist[cur] + 1
+                    queue.append(nb)
+        return None
+
+    def paths(self, src, dst, k=4, slack=1):
+        """Do k ścieżek prostych src -> dst (listy dpid), najkrótsze najpierw.
+        Brane są ścieżki o długości co najwyżej (najkrótsza + slack) hopów"""
+
+        if src == dst:
+            return [[src]]
+        shortest = self.hop_count(src, dst)
+        if shortest is None:
+            return []
+        limit = shortest + slack
+        found = []
+
+        def dfs(node, path):
+            if node == dst:
+                found.append(list(path))
+                return
+            if len(path) - 1 >= limit:
+                return
+            for nb in sorted(self.adj[node]):
+                if nb not in path:
+                    path.append(nb)
+                    dfs(nb, path)
+                    path.pop()
+
+        dfs(src, [src])
+        found.sort(key=lambda p: (len(p), p))
+        return found[:k]
+
+    def path_ports(self, path):
+        """[(dpid, port wyjściowy), ...] dla każdego hopa ścieżki oprócz ostatniego"""
+        return [(a, self.adj[a][b]) for a, b in zip(path, path[1:])]
