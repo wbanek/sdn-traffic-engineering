@@ -11,6 +11,7 @@ topology:
         - ../topologies:/topologies:ro
       env:
         TOPO_FILE: /topologies/sdn.clab.yaml
+        POLICY: lllb
       cmd: ryu-manager --verbose --ofp-tcp-listen-port 6653 /controllers/controller_ryu.py
 
 

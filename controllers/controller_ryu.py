@@ -1,4 +1,4 @@
-import os 
+import os, time
 
 from topo import Topology
 from ryu.base import app_manager
@@ -6,8 +6,10 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls       
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet, ethernet, ether_types, arp, ipv4, tcp, udp, in_proto
+from ryu.lib import hub
 
 TOPO_FILE = os.environ.get("TOPO_FILE", "/topologies/sdn.clab.yaml")
+POLICY = os.environ.get("POLICY", "lllb") 
 
 GW_MAC = "02:00:00:00:00:fe"  # Stały adres MAC bramy
 
@@ -18,6 +20,7 @@ class Fabric(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(Fabric, self).__init__(*args, **kwargs)
+        self.logger.info("Path selection policy: %s", POLICY)
         self.topo = Topology(TOPO_FILE)
         self.logger.info("Topology %s: %d switches, %d hosts",
                         TOPO_FILE, len(self.topo.switches), len(self.topo.hosts))
@@ -33,6 +36,17 @@ class Fabric(app_manager.RyuApp):
 
         # Słownik przechowujący informacje o przełącznikach
         self.datapaths = {}
+
+        # flow -> (ścieżka, czas wyboru); ochrona przed duplikatami Packet-In
+        self.active = {}
+
+        # Monitor obciązenia łączy miedzy przełącznikami
+        self.link_peer = {(dpid, port): nb
+                          for dpid, nbs in self.topo.adj.items()
+                          for nb, port in nbs.items()}  # (dpid, port) -> sąsiad
+        self.port_prev = {} # (dpid, port) -> (tx_bytes, czas w sekundach)
+        self.link_bps = {} # (dpid, port) -> zmierzona przepływność [b/s]
+        hub.spawn(self._monitor)
 
     # ---------- reguły startowe ----------
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -152,6 +166,51 @@ class Fabric(app_manager.RyuApp):
             self.logger.debug("Unrouted IPv4 on %s port %d: %s -> %s",
                               self.topo.names[datapath.id], in_port, ipv4_pkt.src, ipv4_pkt.dst)
 
+    # ---------- Monitoring portów ----------
+    @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
+    def port_stats_handler(self, ev):
+        dpid = ev.msg.datapath.id
+        for stat in ev.msg.body:
+            key = (dpid, stat.port_no)
+            if key not in self.link_peer:
+                continue
+            now = stat.duration_sec + stat.duration_nsec / 1e9
+            prev = self.port_prev.get(key)
+            self.port_prev[key] = (stat.tx_bytes, now)
+
+            if prev is None:
+                continue
+
+            d_bytes = stat.tx_bytes - prev[0]
+            d_t = now - prev[1]
+            if d_bytes < 0 or d_t <= 0:
+                continue
+
+            self.link_bps[key] = d_bytes * 8 / d_t
+
+    def path_load(self, path):
+        """Wykorzystanie najbardziej obciązonego łącza ściezki"""
+        return max((self.link_bps.get(hop, 0.0) / 10_000_000
+                    for hop in self.topo.path_ports(path)), default=0.0)
+
+    def select_path(self, flow, src, dst):
+        """Wybór ściezki dla przepływu """
+        paths = self.paths[(src, dst)]
+
+        if POLICY == "rr":
+            i = self.rr.get((src, dst), 0)
+            self.rr[(src, dst)] = i + 1
+            return paths[i % len(paths)]
+
+        # LLLB: ściezka z najmniej obciązonym wąskim gardłem
+        best = min(paths, key=self.path_load)
+
+        # Rezerwacja do następnego pomiaru - kolejne przepływy w tej samej sekundzie zobaczą, ze ta ściezka nie jest juz pusta 
+        for hop in self.topo.path_ports(best):
+            self.link_bps[hop] = self.link_bps.get(hop, 0.0) + 500_000
+        return best
+    
+
     # ---------- ARP ----------
     def _handle_arp(self, datapath, in_port, pkt_arp):
         """Obsługa pakietów ARP"""
@@ -232,20 +291,22 @@ class Fabric(app_manager.RyuApp):
             fields.update(udp_src=src_port, udp_dst=dst_port)
         return parser.OFPMatch(**fields)
 
-    def select_path(self, flow, src, dst):
-        """Wybór ścieżki dla przepływu"""
-        paths = self.paths[(src, dst)]
-
-        i = self.rr.get((src, dst), 0)
-        self.rr[(src, dst)] = i + 1
-        
-        return paths[i % len(paths)]
-
     def _route_flow(self, datapath, in_port, pkt, ip_pkt, data, dst_edge):
         """Nowy przepływ do obcej podsieci: wybór ścieżki, reguły na każdym hopie, Packet-Out"""
         src_edge = datapath.id
         flow = self._flow_key(pkt, ip_pkt)
-        path = self.select_path(flow, src_edge, dst_edge)
+        now = time.time()
+
+        cached = self.active.get(flow)
+        if cached is not None and now - cached[1] < 2:
+            # Pakiet z tego samego przepływu przed instalacją reguły - ta sama ścieżka
+            path = cached[0]
+            new = False
+        else:
+            loads = [self.path_load(p) for p in self.paths[(src_edge, dst_edge)]]
+            path = self.select_path(flow, src_edge, dst_edge)
+            self.active[flow] = (path, now)
+            new = True
         hops = self.topo.path_ports(path)
 
         # Reguły od końca ścieżki do początku
@@ -267,6 +328,27 @@ class Fabric(app_manager.RyuApp):
             datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, in_port=in_port,
             actions=[parser.OFPActionOutput(hops[0][1])], data = data))
 
-        self.logger.info("Flow %s -> %s", flow,
-                         " -> ".join(self.topo.names[d] for d in path))
+        if new:
+            self.logger.info("Flow %s -> %s (loads %s)", flow,
+                            " -> ".join(self.topo.names[d] for d in path),
+                            " ".join(f"{l:.0%}" for l in loads))
+
+    def _monitor(self):
+        """Co 1 s: zapytanie o statystyki portów do każdego połączonego przełącznika"""
+        while True:
+            for datapath in list(self.datapaths.values()):
+                parser = datapath.ofproto_parser
+                ofproto = datapath.ofproto
+                datapath.send_msg(parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY))
+
+            busy = [f"{self.topo.names[d]}:{p}->{self.topo.names[self.link_peer[(d, p)]]} "
+                    f"{bps / 1e6:.2f}Mb/s {bps / 10_000_000:.0%}"
+                    for (d, p), bps in sorted(self.link_bps.items()) if bps > 100_000]
+            if busy:
+                self.logger.info("Links: %s", ", ".join(busy))
+
+            now = time.time()
+            self.active = {f: v for f, v in self.active.items() if now - v[1] < 2}
+
+            hub.sleep(1)
 

@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-26)
+# Status projektu (ostatnia aktualizacja: 2026-10-28)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -178,6 +178,18 @@ bo reguły na różnych przełącznikach mogą dojść w dowolnej kolejności
 kolejne pingi w ciągu `idle_timeout` idą tą samą ścieżką bez Packet-In; `iperf3` = co
 najmniej 2 przepływy (TCP sterujący + UDP/TCP dane) w każdą stronę — kanał sterujący też
 zużywa krok round-robin
+- **Duplikat Packet-In = dwa wybory ścieżki dla jednego przepływu** (znalezione w teście 1
+LLLB, 2026-10-28): ta sama piątka dwa razy w logu, np. `leaf4 -> spine1 -> leaf1 (loads 0% 0% 0%)`
+i zaraz potem `leaf4 -> spine2 -> leaf1 (loads 5% 0% 0%)`. Przyczyna: wyścig — kolejny pakiet
+przepływu dociera do leafa brzegowego, zanim kontroler wgra regułę (reguły instalowane od
+końca ścieżki, brzegowy leaf ostatni), więc trafia jako drugi Packet-In. Drugi wybór widzi
+rezerwację pierwszego, wybiera inną ścieżkę i FlowMod (ten sam match i priorytet) nadpisuje
+regułę → przepływ przeskakuje w trakcie (ryzyko reorderingu TCP / jittera wideo) + podwójna,
+fantomowa rezerwacja psuje kolejne decyzje (w RR — przeskok licznika). Poprawka: słownik
+`self.active` (piątka → ścieżka, czas wyboru); Packet-In tej samej piątki w ciągu 2 s
+dostaje zapamiętaną ścieżkę bez ponownego `select_path`, wpisy starsze niż 2 s czyszczone
+w `_monitor` (okno krótsze niż `idle_timeout`, żeby po wygaśnięciu reguł przepływ dostał
+świeży wybór). Weryfikacja: każda piątka dokładnie raz w logu `Flow`
 
 ## Ustalenia ze spotkania z promotorem (2026-10-21)
 - Sieć może być **statyczna** — topologia i rozmieszczenie hostów nie zmieniają się
