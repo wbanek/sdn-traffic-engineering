@@ -10,7 +10,8 @@
 
 ## 2. Temat i Cel Projektu Badawczego
 - **Tematyka:** Porównanie wydajności routingu wielościeżkowego (Multipath Routing) i mechanizmów inżynierii ruchu (Traffic Engineering) dla strumieni wideo: tradycyjne sieci OSPF a architektura SDN.
-- **Główny cel:** Empiryczne zmierzenie i porównanie metryk jakości transmisji wideo (QoS/QoE: jitter, packet loss, throughput, delay) w scenariuszach równomiernego obciążenia łączy oraz w stanach awarii/przeciążenia ścieżek.
+- **Główny cel:** Empiryczne zmierzenie i porównanie metryk jakości transmisji wideo (QoS/QoE: jitter, packet loss, throughput, delay) w scenariuszach równomiernego obciążenia łączy oraz przeciążenia ścieżek.
+- **Poza zakresem:** awarie łączy/węzłów i mechanizmy reakcji na nie (failover, PortStatus, fast-failover) — nie są częścią pracy.
 - **Warianty porównawcze:**
   - A: OSPF + ECMP (FRRouting)
   - B: SDN + LLLB (Least Loaded Link Balancing)
