@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-10-28)
+# Status projektu (ostatnia aktualizacja: 2026-10-30)
 
 ## Działa — wariant A (OSPF + ECMP)
 - Topologia 3 spine × 4 leaf, 3 hosty/leaf wdrożona
@@ -72,12 +72,46 @@ zmiana kodu → `docker restart clab-sdn-ryu-controller`
   przełączników brzegowych (Clos: 12 par)
   - przełącznik brzegowy: obca podsieć (prio 50) → CONTROLLER; tranzyt: trasa domyślna
   - `_route_flow`: klucz 5-tuple `(proto, src, dst, sport, dport)` (porty `None` dla ICMP),
-  `select_path` (na razie round-robin per para), reguły prio 70 z 5-tuple na każdym hopie
-  od końca ścieżki, `idle_timeout=10`, Packet-Out pierwszego pakietu wprost na port
-  uplinku; log `Flow (…) -> leaf1 -> spine2 -> leaf4`
-  - test (2026-10-26): 48/48 pingów (4 hosty źródłowe × 12 celów), trzy pingi do
-  10.1.4.10/11/12 → spine1, spine2, spine3; odpowiedzi z leaf4 własnym licznikiem
+  `select_path` (polityka wg `POLICY`, patrz krok 8), reguły prio 70 z 5-tuple na każdym
+  hopie od końca ścieżki, `idle_timeout=10`, Packet-Out pierwszego pakietu wprost na port
+  uplinku; log `Flow (…) -> leaf1 -> spine2 -> leaf4 (loads 0% 52% 0%)`
+  - test (2026-10-26, round-robin): 48/48 pingów (4 hosty źródłowe × 12 celów), trzy pingi
+  do 10.1.4.10/11/12 → spine1, spine2, spine3; odpowiedzi z leaf4 własnym licznikiem
   (asymetria jak w ECMP); reguły 70 z rosnącym `n_packets` na leaf1, spine'ach, leaf4
+- **Krok 7: monitor obciążenia łączy** — 2026-10-27:
+  - wątek `_monitor` (`hub.spawn`): co 1 s `OFPPortStatsRequest(dp, 0, OFPP_ANY)` do każdego
+  połączonego przełącznika; log `Links: leaf1:2->spine2 5.15Mb/s 52%, …` dla łączy > 100 kb/s
+  - `port_stats_handler` (`EventOFPPortStatsReply`): tylko porty z `link_peer` ((dpid, port)
+  → sąsiad; 24 kierunki łączy w Clos, bez hostów i `LOCAL`); `link_bps[(dpid, port)] =
+  Δtx_bytes·8/Δt`, czas z `duration_sec + duration_nsec/1e9` (zegar przełącznika); pierwszy
+  odczyt i ujemna różnica pomijane. `tx_bytes` = ruch wychodzący → każdy kierunek łącza osobno
+  - `path_load(path)` = wykorzystanie najbardziej obciążonego łącza ścieżki (wąskie gardło),
+  względem 10 Mb/s wpisanych na sztywno (`/ 10_000_000` w `path_load` i w logu `_monitor`)
+  - test: iperf3 UDP 5 Mb/s → `leaf1:2->spine2 5.15Mb/s 52%` (narzut ramki 1442/1400 B)
+- **Krok 8: wariant B (LLLB)** — 2026-10-28:
+  - zmienna `POLICY` (env w `sdn.clab.yaml`, domyślnie `lllb`): `rr` = round-robin per para
+  (zostaje do porównań), `lllb` = `min(paths, key=path_load)`; remis → pierwsza ścieżka
+  z listy (sortowanie z `topo.paths`, w Clos spine1); log `Path selection policy: …` przy starcie
+  - rezerwacja tymczasowa: po wyborze +0,5 Mb/s w `link_bps` na łączach wybranej ścieżki —
+  kolejne przepływy w tej samej sekundzie widzą, że ścieżka nie jest pusta (ochrona przed
+  „herdingiem”); następny pomiar nadpisuje ją prawdziwą wartością
+  - `self.active` (piątka → (ścieżka, czas)): duplikat Packet-In tego samego przepływu
+  w ciągu 2 s dostaje tę samą ścieżkę bez ponownego wyboru (patrz pułapki); czyszczenie
+  w `_monitor`
+  - `loads` w logu `Flow` liczone **przed** `select_path` (bez własnej rezerwacji), w kolejności
+  `self.paths[(src, dst)]`
+- **Testy LLLB** (2026-10-28, Clos, leaf1 → leaf4, iperf3 UDP):
+  - test 1 — pusta sieć, 3 przebiegi po 3 Mb/s z przerwą 15 s: za każdym razem TCP sterujący
+  → spine1 (`0% 0% 0%`), UDP → spine2 (`5% 0% 0%` — działa rezerwacja); deterministyczne;
+  każda piątka w logu dokładnie raz (po poprawce duplikatów)
+  - test 2 — omijanie obciążenia: strumień 6 Mb/s (spine2, 60%), po ~3 s drugi 3 Mb/s →
+  TCP spine1, UDP **spine3** (`loads 5% 61% 0%`); oba 0% strat (0/2382, 0/397). Uwaga:
+  test bez `-l 1400` (datagramy ~9,2 KB) → jitter 2,5 ms / 0,29 ms nieporównywalny
+  - test 3 — 3 strumienie po 3 Mb/s startujące jednocześnie (`-l 1400`): rezerwacja działa
+  (loads rosną 0→5→10%, 6 przepływów = po 2 na spine), ale UDP .11 i .12 trafiły razem na
+  spine3 (6,18 Mb/s, 62%), a na spine2 poszły dwa kanały sterujące TCP — patrz ograniczenie
+  LLLB w sekcji „Nie działa”
+  - kierunek powrotny liczony osobno (`loads 0% 0% 0%` przy UDP w jedną stronę) — poprawne
 - Podmiana samego kontrolera bez ruszania labu:
 `containerlab destroy/deploy -t sdn.clab.yaml --node-filter ryu-controller`
 - Ryu 4.34 także na hoście w `.venv` (Python 3.9) — do podpowiedzi i lintowania w IDE;
@@ -90,10 +124,24 @@ uruchamianie i pomiary w kontenerze:
 - Ściągawka Ryu (dekorator `@set_ev_cls`, fazy, zdarzenia, skróty): `docs/ryu-sciagawka.md`
 
 ## Nie działa / nie zrobione
-- Monitoring obciążenia łączy — brak; wybór ścieżki to na razie round-robin, który nie
-patrzy na obciążenie
-- Warianty B (LLLB) i C (QoS-Aware) — nierozpoczęte; logika C w fazie analizy
-(decyzje otwarte, patrz niżej)
+- Wariant C (QoS-Aware) — nierozpoczęty; logika w fazie analizy (decyzje otwarte, patrz
+niżej)
+- Test 4 (RR vs LLLB pod obciążeniem) — nie wykonany; wymaga `POLICY: rr` i odtworzenia
+kontenera kontrolera
+- **Ograniczenie LLLB (cecha algorytmu, nie błąd):** przy Packet-In rozmiar przepływu jest
+nieznany, rezerwacja jest jednakowa (0,5 Mb/s) dla wideo i kanału sterującego, a decyzja
+zapada raz. Przy jednoczesnym starcie LLLB równoważy **liczbę** przepływów, nie pasmo —
+dwa strumienie danych mogą trafić na jeden spine (test 3). Świadomie nie poprawiane w B
+(rezerwacja tylko dla UDP = dopasowanie pod iperf3; przenoszenie przepływów = inny
+algorytm); motywacja dla C (DSCP mówi przy pierwszym pakiecie, że to wideo). W pomiarach:
+starty strumieni rozsunięte o ~2 s, jednoczesny start jako osobny scenariusz najgorszego
+przypadku
+- Przepustowość łącza w kontrolerze wpisana na sztywno (10 Mb/s w dwóch miejscach) — musi
+zgadzać się z `tbf rate` w YAML; przy mesh o różnych łączach do zrobienia parsowanie `rate`
+w `topo.py` (lub przynajmniej stała `LINK_BPS`)
+- Pierwsza linia `Links` po nowych przepływach pokazuje same rezerwacje (0,50 Mb/s na
+łączach wybranych ścieżek) — `_monitor` wypisuje `link_bps` przed nadejściem odpowiedzi;
+tylko kosmetyka logu
 - Topologia mesh (sugestia promotora) — kontroler już ją obsłuży, ale samej topologii
 (clab dla FRR i OVS, konfiguracje FRR) jeszcze nie ma
 - Ruch w obrębie jednego przełącznika przechodzi przez regułę hosta (eth_src=GW_MAC,
@@ -114,7 +162,9 @@ replace`
 sysctl L4
 - iperf3 UDP: domyślny datagram ~8 kB ginie na `tc tbf` (veth w clab ma MTU 9500 → brak
 fragmentacji, a tbf odrzuca pakiet większy niż `burst`; widoczne jako dropped w `tc -s qdisc`).
-Wszystkie testy UDP z `-l 1400` (zgodne z realnym RTP).
+Wszystkie testy UDP z `-l 1400` (zgodne z realnym RTP). W SDN (burst 12800 B) datagramy
+~9 KB przechodzą bez strat, ale zawyżają jitter (9 KB na 10 Mb/s = ~7,4 ms nadawania) —
+brak `-l 1400` łatwo przeoczyć (zdarzyło się w teście 2 LLLB).
 - Metryki UDP (loss/jitter) wyłącznie z raportu serwera (linia `receiver` / JSON serwera) —
 sender pokazuje 0% loss nawet przy 100% strat.
 - TCP zamiera do ~0 na `tc tbf` z małym burstem: TSO/GRO skleja segmenty w super-pakiety
@@ -162,7 +212,11 @@ porównać `stat -c %y controller_ryu.py` z `docker inspect … StartedAt` (UTC!
 `TOPO_FILE=../topologies/sdn.clab.yaml ../.venv/bin/python -c "import controller_ryu as c; c.Fabric()"`;
 bez aktywnego venv nie ma polecenia `python` (tylko systemowy `python3` 3.14)
 - git: puste pliki w `.git/objects` po nagłym wyłączeniu VM (2026-10-21) — naprawa:
-kopia `.git`, `find .git/objects -type f -empty -delete`, `git fetch origin`, `git fsck --full`
+kopia `.git`, `find .git/objects -type f -empty -delete`, `git fetch origin`, `git fsck --full`.
+Powtórka 2026-10-28: 5 pustych obiektów, w tym commit wskazywany przez `main`
+(`148cda4`, zapisany tuż przed wyłączeniem) → `fatal: bad object HEAD`. Commit, który nie
+był wypchnięty, przepada — pliki w katalogu roboczym zostają, trzeba go zrobić ponownie.
+Przed wyłączeniem VM: `sync` (albo `git push` od razu po commicie)
 - **Po restarcie maszyny lab jest martwy**: Docker sam podnosi kontenery, ale bez łączy
 veth i bez `exec` (brak eth1+, OVS nie działa — `db.sock: Connection refused`, kontroler
 bez połączeń). Zawsze `sudo containerlab deploy -t sdn.clab.yaml --reconfigure`
@@ -190,6 +244,16 @@ fantomowa rezerwacja psuje kolejne decyzje (w RR — przeskok licznika). Poprawk
 dostaje zapamiętaną ścieżkę bez ponownego `select_path`, wpisy starsze niż 2 s czyszczone
 w `_monitor` (okno krótsze niż `idle_timeout`, żeby po wygaśnięciu reguł przepływ dostał
 świeży wybór). Weryfikacja: każda piątka dokładnie raz w logu `Flow`
+- Ten sam przepływ ponownie w logu po > 10 s ciszy (np. kanał sterujący iperf3 na końcu
+testu) — to nie duplikat: reguła wygasła (`idle_timeout=10`), następny pakiet dostaje
+świeży wybór. Bez ryzyka reorderingu, bo w tym czasie nic nie płynęło
+- Zmiana `env:` kontrolera (np. `POLICY`) w YAML wymaga odtworzenia kontenera (destroy/deploy
+`--node-filter ryu-controller`) — `docker restart` zostawia stare zmienne; sprawdzenie:
+`docker exec clab-sdn-ryu-controller env | grep POLICY` i linia `Path selection policy` w logu
+- Wywołanie loggera z większą liczbą argumentów niż `%s` w formacie → `TypeError: not all
+arguments converted` (traceback w logu, linia nie zostaje wypisana, ruch działa dalej)
+- Przepustowość łączy jest pewna tylko z `tc`: `docker exec clab-sdn-leaf1 tc qdisc show dev eth1`
+→ `rate 10Mbit burst 12800b`; empirycznie iperf3 `-b 15M` → receiver ~9,5 Mb/s, `Links` ~100%
 
 ## Ustalenia ze spotkania z promotorem (2026-10-21)
 - Sieć może być **statyczna** — topologia i rozmieszczenie hostów nie zmieniają się
@@ -210,18 +274,22 @@ Obowiązkowy, jeśli tło będzie TCP; przy tle UDP nieblokujący.
   (C z kolejkami / bez); uwaga: OVS QoS (htb) koliduje z root qdisc tbf
   3. Rezerwa ścieżki wideo: twarda / miękka (work-conserving) / obie jako podwarianty
   4. Przenoszenie istniejących przepływów (rerouting) czy decyzja tylko przy starcie
-  5. Awaria: PortStatus czy też group fast-failover; scenariusz link down czy netem loss
+- Awarie łączy/węzłów — **poza zakresem pracy** (decyzja autora, zapisana w AGENTS.md);
+PortStatus / fast-failover nie są implementowane
 
 ## Następny krok
-- Krok 7: monitor obciążenia — wątek `hub.spawn`, `OFPPortStatsRequest` co 1 s do
-wszystkich przełączników, handler `EventOFPPortStatsReply`: wykorzystanie każdego łącza
-(przełącznik, port) z Δtx_bytes względem 10 Mb/s
-- Krok 8: wariant B (LLLB) — `select_path` wybiera ścieżkę o najmniejszym
-max(wykorzystanie łączy na ścieżce)
+- Naprawić repozytorium git (puste obiekty po 2026-10-28, patrz pułapki) i ponowić commit
+kroków 7–8
+- Test 4: RR vs LLLB — 3 strumienie po 6 Mb/s z h1-video/bg1/bg2 do leaf4, starty
+rozsunięte o ~2 s, `-l 1400`, osobno `POLICY: rr` i `POLICY: lllb`; oczekiwane: RR może dać
+2 strumienie na jednym spine (12 Mb/s > 10 → straty), LLLB rozkłada bez strat
 - Krok 9: wariant C (QoS-Aware) — po rozstrzygnięciu decyzji otwartych
-- Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, literówka w komentarzu
-`_handle_arp` („zapytaniam”), docstring `_install_host_rule` („w danym leafie”),
-spacje na końcu linii
+- Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, literówki w komentarzach
+(„zapytaniam”, „obciązenia”, „miedzy”, „ściezki”), docstring `_install_host_rule`
+(„w danym leafie”), spacje na końcu linii; stała `LINK_BPS` zamiast dwóch `10_000_000`
 - Wyrównać burst tbf leaf↔spine między A a SDN
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)
+- Dalej: topologia mesh (najlepiej generator YAML dla FRR i OVS), skrypty pomiarowe
+(iperf3 JSON, opóźnienie, tło 50/70/90%, scenariusz przeciążenia ścieżki, automatyzacja
+serii A/B/C), analiza wyników (pandas/matplotlib)

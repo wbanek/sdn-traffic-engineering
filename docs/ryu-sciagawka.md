@@ -39,7 +39,7 @@ Klasy w `ryu.controller.ofp_event` powstają automatycznie: komunikat `OFPPacket
 |---|---|---|---|
 | `EventOFPSwitchFeatures` | CONFIG | przełącznik się przedstawił (dpid, liczba tabel) | reguły proaktywne, table-miss, ARP |
 | `EventOFPPacketIn` | MAIN | pakiet bez pasującej reguły trafił do kontrolera | ARP proxy bramy, decyzja LLLB/C dla nowego przepływu |
-| `EventOFPPortStatus` | MAIN | port w górę lub w dół | wykrycie awarii łącza |
+| `EventOFPPortStatus` | MAIN | port w górę lub w dół | wykrycie awarii łącza (poza zakresem tej pracy) |
 | `EventOFPPortStatsReply` | MAIN | odpowiedź na `OFPPortStatsRequest` | obciążenie łączy (Δtx_bytes) |
 | `EventOFPFlowStatsReply` | MAIN | odpowiedź na `OFPFlowStatsRequest` | ruch per reguła |
 | `EventOFPFlowRemoved` | MAIN | reguła wygasła (wymaga `OFPFF_SEND_FLOW_REM`) | sprzątanie stanu przepływów |
