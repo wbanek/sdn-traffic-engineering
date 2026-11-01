@@ -3,13 +3,17 @@ import os, time
 from topo import Topology
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls       
+from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet, ethernet, ether_types, arp, ipv4, tcp, udp, in_proto
 from ryu.lib import hub
 
 TOPO_FILE = os.environ.get("TOPO_FILE", "/topologies/sdn.clab.yaml")
-POLICY = os.environ.get("POLICY", "lllb") 
+POLICY = os.environ.get("POLICY", "lllb")
+VIDEO_DSCP = 46
+SPILL = 0.9   # powyżej tego obciążenia rezerwa "przelewa się"
+RESERVE_PCT = float(os.environ.get("RESERVE_PCT", "100"))   # % łącza rezerwowego dla wideo
+
 
 GW_MAC = "02:00:00:00:00:fe"  # Stały adres MAC bramy
 
@@ -46,6 +50,10 @@ class Fabric(app_manager.RyuApp):
                           for nb, port in nbs.items()}  # (dpid, port) -> sąsiad
         self.port_prev = {} # (dpid, port) -> (tx_bytes, czas w sekundach)
         self.link_bps = {} # (dpid, port) -> zmierzona przepływność [b/s]
+        self.flow_class = {}    # flow -> "video" | "be"
+        self.flow_prev = {}     # (dpid, flow) -> (bajty, czas) do liczenia przepływności reguły
+        self.class_bps = {}     # (dpid, port) -> {"video": b/s, "be": b/s}
+
         hub.spawn(self._monitor)
 
     # ---------- reguły startowe ----------
@@ -90,7 +98,7 @@ class Fabric(app_manager.RyuApp):
             else:
                 # tranzyt: trasa domyślna
                 actions = [parser.OFPActionOutput(next_hops[dpid])]
-        
+
             self.add_flow(datapath, 50, match, actions)
 
         # Doręczenie do lokalnych hostów (MAC znany z topologii)
@@ -106,7 +114,7 @@ class Fabric(app_manager.RyuApp):
         # Tworzenie instrukcji (instructions) dla przepływu
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
-                                match=match, instructions=inst, 
+                                match=match, instructions=inst,
                                 idle_timeout=idle_timeout)
         datapath.send_msg(mod)
 
@@ -128,11 +136,11 @@ class Fabric(app_manager.RyuApp):
         self.add_flow(datapath, 60, match, actions)
         self.logger.info("Host rule: %s (mac=%s) on %s port %d",
                          ip, mac, self.topo.names[dpid], port)
-    
+
     # ---------- Packet-In ----------
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
-        msg = ev.msg 
+        msg = ev.msg
         datapath = msg.datapath
 
         # Pobranie informacji o porcie wejściowym
@@ -151,7 +159,7 @@ class Fabric(app_manager.RyuApp):
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
             self._handle_arp(datapath, in_port, pkt.get_protocol(arp.arp))
             return
-        
+
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             ipv4_pkt = pkt.get_protocol(ipv4.ipv4)
             if ipv4_pkt is None:
@@ -188,13 +196,48 @@ class Fabric(app_manager.RyuApp):
 
             self.link_bps[key] = d_bytes * 8 / d_t
 
+    @set_ev_cls(ofp_event.EventOFPFlowStatsReply, MAIN_DISPATCHER)
+    def flow_stats_handler(self, ev):
+        dpid = ev.msg.datapath.id
+        per_link = {}
+        for stat in ev.msg.body:
+            if stat.priority != 70:
+                continue
+            m = dict(stat.match.items())
+            flow = (m["ip_proto"], m["ipv4_src"], m["ipv4_dst"],
+                    m.get("tcp_src", m.get("udp_src")), m.get("tcp_dst", m.get("udp_dst")))
+            port = stat.instructions[0].actions[0].port
+            now = stat.duration_sec + stat.duration_nsec / 1e9
+            prev = self.flow_prev.get((dpid, flow))
+            self.flow_prev[(dpid, flow)] = (stat.byte_count, now)
+
+            if prev is None:
+                continue
+            d_bytes = stat.byte_count - prev[0]
+            d_t = now - prev[1]
+            if d_bytes < 0 or d_t <= 0:
+                continue    # reguła wgrana ponownie 
+
+            cls = self.flow_class.get(flow, "be")
+            link = per_link.setdefault((dpid, port), {"video": 0.0, "be": 0.0})
+            link[cls] += d_bytes * 8 / d_t
+
+        for key in [k for k in self.class_bps if k[0] == dpid]:
+            del self.class_bps[key]
+        self.class_bps.update(per_link)
+
+    def class_load(self, path, cls):
+        """Wykorzystanie najbardziej obciążonego łącza ścieżki przez daną klasę ruchu"""
+        return max((self.class_bps.get(hop, {}).get(cls, 0.0) / 10_000_000
+                    for hop in self.topo.path_ports(path)), default=0.0)
+
     def path_load(self, path):
         """Wykorzystanie najbardziej obciązonego łącza ściezki"""
         return max((self.link_bps.get(hop, 0.0) / 10_000_000
                     for hop in self.topo.path_ports(path)), default=0.0)
 
-    def select_path(self, flow, src, dst):
-        """Wybór ściezki dla przepływu """
+    def select_path(self, flow, src, dst, video=False):
+        """Wybór ściezki dla przepływu wg POLICY """
         paths = self.paths[(src, dst)]
 
         if POLICY == "rr":
@@ -202,14 +245,32 @@ class Fabric(app_manager.RyuApp):
             self.rr[(src, dst)] = i + 1
             return paths[i % len(paths)]
 
-        # LLLB: ściezka z najmniej obciązonym wąskim gardłem
-        best = min(paths, key=self.path_load)
+        candidates = paths
+        if POLICY == "qos" and len(paths) > 1:
+            reserved = paths[0]
+            others = paths[1:]
 
-        # Rezerwacja do następnego pomiaru - kolejne przepływy w tej samej sekundzie zobaczą, ze ta ściezka nie jest juz pusta 
+            if video: 
+                if self.path_load(reserved) < SPILL:
+                    candidates = [reserved]
+            else:
+                allowed = list(others)
+                # miękka rezerwa: best-effort może zająć rezerwę do (100 - R)% łącza
+                if self.class_load(reserved, "be") < (100 - RESERVE_PCT) / 100:
+                    allowed.append(reserved)
+                
+                candidates = allowed
+
+
+        # LLLB: ściezka z najmniej obciązonym wąskim gardłem
+        best = min(candidates, key=self.path_load)
+
+        cls = "video" if video else "be"
         for hop in self.topo.path_ports(best):
             self.link_bps[hop] = self.link_bps.get(hop, 0.0) + 500_000
+            self.class_bps.setdefault(hop, {"video": 0.0, "be": 0.0})[cls] += 500_000
         return best
-    
+
 
     # ---------- ARP ----------
     def _handle_arp(self, datapath, in_port, pkt_arp):
@@ -218,7 +279,7 @@ class Fabric(app_manager.RyuApp):
 
         if pkt_arp.opcode != arp.ARP_REQUEST or pkt_arp.src_ip == pkt_arp.dst_ip:
             return  # Ignorowanie pakietów ARP, które nie są zapytaniem
-        
+
         gw_ip, _ = self.topo.gateways[datapath.id]
         host = self.topo.hosts.get(pkt_arp.dst_ip)
 
@@ -232,7 +293,7 @@ class Fabric(app_manager.RyuApp):
         self.logger.debug("ARP %s asks for %s -> %s", pkt_arp.src_ip, pkt_arp.dst_ip, mac)
 
         self._send_arp(datapath, in_port, arp.ARP_REPLY, mac, pkt_arp.dst_ip, pkt_arp.src_mac, pkt_arp.src_ip)
-    
+
 
     def _learn(self, ip, mac, dpid, port):
         """Sprawdzenie hosta z ruchu względem topologii; uzupełnienie MAC, jeśli go nie ma."""
@@ -258,15 +319,15 @@ class Fabric(app_manager.RyuApp):
         eth_dst = "ff:ff:ff:ff:ff:ff" if opcode == arp.ARP_REQUEST else dst_mac
 
         pkt = packet.Packet()
-        pkt.add_protocol(ethernet.ethernet(dst=eth_dst, src=src_mac, 
+        pkt.add_protocol(ethernet.ethernet(dst=eth_dst, src=src_mac,
                                             ethertype=ether_types.ETH_TYPE_ARP))
 
-        pkt.add_protocol(arp.arp(opcode=opcode, src_mac=src_mac, src_ip=src_ip, 
+        pkt.add_protocol(arp.arp(opcode=opcode, src_mac=src_mac, src_ip=src_ip,
                                     dst_mac=dst_mac, dst_ip=dst_ip))
         pkt.serialize()
         actions = [parser.OFPActionOutput(out_port)]
-        datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, 
-                                            in_port=ofproto.OFPP_CONTROLLER, 
+        datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER,
+                                            in_port=ofproto.OFPP_CONTROLLER,
                                             actions=actions, data=pkt.data))
 
     def _flow_key(self, pkt, ip_pkt):
@@ -282,7 +343,7 @@ class Fabric(app_manager.RyuApp):
 
     def _flow_match(self, parser, flow):
         """OFPMatch dla przepływu"""
-        proto, src, dst, src_port, dst_port = flow 
+        proto, src, dst, src_port, dst_port = flow
         fields = {"eth_type": ether_types.ETH_TYPE_IP, "ip_proto": proto,
                   "ipv4_src": src, "ipv4_dst": dst}
         if proto == in_proto.IPPROTO_TCP:
@@ -295,6 +356,7 @@ class Fabric(app_manager.RyuApp):
         """Nowy przepływ do obcej podsieci: wybór ścieżki, reguły na każdym hopie, Packet-Out"""
         src_edge = datapath.id
         flow = self._flow_key(pkt, ip_pkt)
+        video = (ip_pkt.tos >> 2) == VIDEO_DSCP
         now = time.time()
 
         cached = self.active.get(flow)
@@ -304,7 +366,8 @@ class Fabric(app_manager.RyuApp):
             new = False
         else:
             loads = [self.path_load(p) for p in self.paths[(src_edge, dst_edge)]]
-            path = self.select_path(flow, src_edge, dst_edge)
+            self.flow_class[flow] = "video" if video else "be"
+            path = self.select_path(flow, src_edge, dst_edge, video)
             self.active[flow] = (path, now)
             new = True
         hops = self.topo.path_ports(path)
@@ -329,9 +392,10 @@ class Fabric(app_manager.RyuApp):
             actions=[parser.OFPActionOutput(hops[0][1])], data = data))
 
         if new:
-            self.logger.info("Flow %s -> %s (loads %s)", flow,
-                            " -> ".join(self.topo.names[d] for d in path),
-                            " ".join(f"{l:.0%}" for l in loads))
+            self.logger.info("Flow %s -> %s (%s, loads %s)", flow,
+                             " -> ".join(self.topo.names[d] for d in path),
+                             "video" if video else "be",
+                             " ".join(f"{l:.0%}" for l in loads))
 
     def _monitor(self):
         """Co 1 s: zapytanie o statystyki portów do każdego połączonego przełącznika"""
@@ -340,6 +404,7 @@ class Fabric(app_manager.RyuApp):
                 parser = datapath.ofproto_parser
                 ofproto = datapath.ofproto
                 datapath.send_msg(parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY))
+                datapath.send_msg(parser.OFPFlowStatsRequest(datapath))
 
             busy = [f"{self.topo.names[d]}:{p}->{self.topo.names[self.link_peer[(d, p)]]} "
                     f"{bps / 1e6:.2f}Mb/s {bps / 10_000_000:.0%}"
