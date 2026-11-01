@@ -1,0 +1,34 @@
+# Przegląd rezerwy dla wideo: ECMP (A), LLLB (B) i QoS-Aware (C) z miękką rezerwą R = 100/90/70/50%.
+# Dwa strumienie wideo (3 Mb/s, DSCP 46) zbiegają się na leaf4 (ok. 60% łącza rezerwowego spine1->leaf4),
+# a na to nakłada się losowe tło best-effort (jak w random-ecmp-lllb-rr). Inny harmonogram tła w każdym
+# powtórzeniu (seed + nr), wspólny dla wszystkich wariantów w danym powtórzeniu.
+# R = część łącza rezerwowego zachowana dla wideo: best-effort może zająć rezerwę do (100 - R)% łącza.
+name: reserve-sweep-quick
+topology: sdn
+topology_files:
+  sdn: topologies/sdn.clab.yaml
+  frr: topologies/spine-leaf-3x4.clab.yml
+variants:
+  - ecmp
+  - lllb
+  - {name: qos100, policy: qos, reserve_pct: 100}
+  - {name: qos90,  policy: qos, reserve_pct: 90}
+  - {name: qos70,  policy: qos, reserve_pct: 70}
+  - {name: qos50,  policy: qos, reserve_pct: 50}
+duration: 60
+warmup: 5
+repetitions: 1
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

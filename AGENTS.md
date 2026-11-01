@@ -19,15 +19,15 @@
 
 ## 3. Środowisko i Stos Technologiczny
 - **Platforma bazowa:** Maszyna wirtualna z systemem Linux, Containerlab.
-- **Topologia:** 3 spine × 4 leaf, 3 hosty/leaf (video, bg1, bg2); planowana druga topologia typu mesh (kontroler SDN jest niezależny od topologii).
-  - wariant A: `topologies/spine-leaf-3x4.clab.yml`
-  - warianty B/C: `topologies/sdn.clab.yaml`
+- **Topologia:** Clos 3 spine × 4 leaf, 3 hosty/leaf (video, bg1, bg2) oraz mesh (4 edge + 3 core, 3 hosty/edge; przygotowana, jeszcze niemierzona). Kontroler SDN jest niezależny od topologii.
+  - wariant A: `topologies/clos-frr.clab.yml`, `topologies/mesh-frr.clab.yml`
+  - warianty B/C: `topologies/clos-sdn.clab.yml`, `topologies/mesh-sdn.clab.yml`
 - **Adresacja:** hosty /24 (10.1.L.0/24, brama 10.1.L.1, hosty .10/.11/.12). Tylko A: fabric /31 (10.10.S.x/31), loopbacki /32 (10.255.x.x). SDN: stałe MAC hostów `02:00:0L:00:00:HH`, wirtualny MAC bramy `02:00:00:00:00:fe`, dpid leaf1–4 = 0x01–0x04, spine1–3 = 0x11–0x13. Szczegóły: `docs/status.md`.
 - **Łącza:** `tc tbf` w `exec` — leaf↔spine 10 Mb/s, host↔leaf 100 Mb/s (po obu końcach łącza).
 - **Obrazy:** `quay.io/frrouting/frr:9.0.1` (FRR), `kathara/sdn` (Open vSwitch 3.1), `sdn-ryu:4.34` (własny, `images/ryu/Dockerfile`), `wbitt/network-multitool` (hosty).
-- **Architektura tradycyjna:** OSPF area 0 + ECMP (FRRouting, `configs/frr/`, hash L4).
-- **Architektura SDN:** OpenFlow 1.3, kontroler Ryu 4.34 (Python): `controllers/controller_ryu.py` (aplikacja `Fabric`) + `controllers/topo.py` (model sieci z pliku clab). Wybór ścieżki per przepływ, polityka przez zmienną `POLICY` (`rr`, `lllb`).
-- **Generowanie i analiza ruchu:** iperf3 (UDP z `-l 1400`, metryki z raportu serwera); skrypty pomiarowe i analiza wyników — w przygotowaniu.
+- **Architektura tradycyjna:** OSPF area 0 + ECMP (FRRouting, `configs/frr/clos/`, `configs/frr/mesh/`, hash L4).
+- **Architektura SDN:** OpenFlow 1.3, kontroler Ryu 4.34 (Python): `controllers/controller_ryu.py` (aplikacja `Fabric`) + `controllers/topo.py` (model sieci z pliku clab). Wybór ścieżki per przepływ, polityka przez zmienną `POLICY` (`rr`, `lllb`, `qos`); wariant C (`qos`): klasyfikacja po DSCP 46, ścieżka rezerwowa dla wideo (`paths[0]`), udział best-effort na rezerwie ograniczony przez `RESERVE_PCT`, pomiar obciążenia per klasa z `FlowStats`.
+- **Generowanie i analiza ruchu:** iperf3 (UDP z `-l 1400`, metryki z raportu serwera), ping wideo z DSCP. Lokalny skill `.claude/skills/sdn-test-runner/` (poza repozytorium) uruchamia scenariusze z `scenarios/` i generuje raporty do `results/`. Wyniki i stan prac: `docs/status.md`.
 
 ## 4. Oczekiwania Wobec Odpowiedzi
 - Projektując rozwiązania dla OSPF, uwzględniaj metryki kosztu interfejsów i zachowanie mechanizmów ECMP.

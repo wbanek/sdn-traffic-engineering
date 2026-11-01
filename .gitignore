@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 .DS_Store
+.claude
+scenarios/
+results/*/*/raw/

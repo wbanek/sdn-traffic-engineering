@@ -1,0 +1,29 @@
+# Losowe tło + wideo: A (OSPF+ECMP) vs B (SDN+LLLB) vs RR (punkt odniesienia SDN) na Clos 3x4.
+# Wideo (mierzony obiekt): stały strumień h1-video -> h4-video, 3 Mb/s, DSCP 46, t = 10..50 s.
+# Tło: strumienie UDP losowo między hostami bg (proces Poissona, losowe pary src/dst na różnych
+# leafach, losowy czas trwania i przepływność). Ten sam seed = ten sam harmonogram w każdym
+# wariancie i w każdym powtórzeniu (harmonogram zapisany w schedule.json).
+# Średnie obciążenie ~ arrival_rate x duration_mean x średnia rate = 1.0 x 15 x 3.5 = ok. 50 Mb/s
+# (ok. 40% przepustowości fabricu 12 x 10 Mb/s w jedną stronę).
+name: random-ecmp-lllb-rr
+topology: sdn
+topology_files:
+  sdn: topologies/sdn.clab.yaml
+  frr: topologies/spine-leaf-3x4.clab.yml
+variants: [ecmp, lllb, rr]
+duration: 60
+warmup: 5
+repetitions: 5
+seed: 42
+vary_per_repetition: true   # inny losowy harmonogram w każdym powtórzeniu (seed + nr), wspólny dla wariantów
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true
