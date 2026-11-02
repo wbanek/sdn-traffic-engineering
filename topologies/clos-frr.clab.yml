@@ -1,4 +1,4 @@
-name: spine-leaf-3x4
+name: clos-frr
 topology:
   defaults:
     kind: linux
