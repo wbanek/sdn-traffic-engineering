@@ -1,0 +1,27 @@
+# Mesh (4 edge + 3 core): LLLB (B) vs QoS-Aware z pełną rezerwą wideo (C, R = 100%).
+# Rezerwa = drzewo wideo wyznaczane automatycznie z topologii (korzeń core2, łącza core2-edge1,
+# core2-edge3, core2-edge4, edge1-edge2). Dwa strumienie wideo (3 Mb/s, DSCP 46) zbiegają się na
+# edge4 (h1-video i h2-video -> h4-video), a na to nakłada się to samo losowe tło co w Clos.
+# Inny harmonogram tła w każdym powtórzeniu (seed + nr), wspólny dla wariantów w powtórzeniu.
+name: mesh-lllb-vs-qos
+topology: mesh
+variants:
+  - lllb
+  - {name: qos100, policy: qos, reserve_pct: 100}
+duration: 60
+warmup: 5
+repetitions: 5
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

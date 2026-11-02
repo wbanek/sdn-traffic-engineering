@@ -1,0 +1,573 @@
+variant,rep,id,class,src,dst,proto,rate_target_mbps,throughput_mbps,jitter_ms,loss_pct,lost_packets,packets,rtt_median_ms,rtt_p95_ms,path,source
+lllb,1,gen01,background,h2-bg1,h3-bg2,udp,4.49,4.4887,0.0606,0.0,0,804,,,edge2 -> edge1 -> core2 -> edge3,serwer
+lllb,1,gen02,background,h4-bg2,h3-bg1,udp,3.16,3.1601,0.1343,0.0,0,1411,,,edge4 -> edge3,serwer
+lllb,1,gen03,background,h4-bg1,h2-bg2,udp,5.25,8.9744,0.0372,0.0,0,1,,,edge4 -> core3 -> edge2,serwer
+lllb,1,gen04,background,h4-bg1,h1-bg2,udp,3.56,3.5609,0.041,0.0,0,1590,,,edge4 -> core2 -> edge1,serwer
+lllb,1,gen05,background,h4-bg1,h3-bg1,udp,2.36,2.2863,0.1726,3.1207,342,10959,,,edge4 -> edge3,serwer
+lllb,1,gen06,background,h1-bg2,h2-bg1,udp,1.93,1.8667,0.1619,3.9597,55,1389,,,edge1 -> core1 -> edge2,serwer
+lllb,1,gen07,background,h2-bg1,h3-bg1,udp,1.39,1.3908,0.0547,0.0,0,621,,,edge2 -> core1 -> edge3,serwer
+lllb,1,gen08,background,h1-bg1,h2-bg1,udp,3.29,3.2899,0.0638,0.0,0,6756,,,edge1 -> edge2,serwer
+lllb,1,gen09,background,h3-bg2,h2-bg1,udp,4.51,4.5078,0.041,0.0,0,2417,,,edge3 -> core1 -> edge1 -> edge2,serwer
+lllb,1,gen10,background,h1-bg2,h3-bg1,udp,3.96,3.8979,0.5567,4.5455,1,22,,,edge1 -> core1 -> edge3,serwer
+lllb,1,gen11,background,h2-bg1,h4-bg2,udp,5.85,5.8503,0.0524,0.0,0,4701,,,edge2 -> core3 -> edge4,serwer
+lllb,1,gen12,background,h1-bg2,h3-bg1,udp,4.9,4.8993,0.0364,0.0,0,2188,,,edge1 -> core1 -> edge3,serwer
+lllb,1,gen13,background,h4-bg1,h1-bg1,udp,3.07,3.0706,0.0343,0.0,0,1371,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,1,vid1,video,h1-video,h4-video,udp,3.0,2.8045,0.1964,6.506,610,9376,0.034,159.0,edge1 -> core2 -> edge4,serwer
+lllb,1,gen14,background,h3-bg2,h1-bg2,udp,5.37,5.3709,0.0449,0.0,0,5275,,,edge3 -> core2 -> edge1,serwer
+lllb,1,vid2,video,h2-video,h4-video,udp,3.0,2.6704,0.1691,10.6422,880,8269,0.035,59.3,edge2 -> edge1 -> core2 -> edge4,serwer
+lllb,1,gen15,background,h3-bg1,h1-bg1,udp,3.12,3.1198,0.0419,0.0,0,3622,,,edge3 -> core2 -> edge1,serwer
+lllb,1,gen16,background,h2-bg1,h1-bg1,udp,4.96,4.9694,0.2266,0.0,0,14,,,edge2 -> core1 -> edge1,serwer
+lllb,1,gen17,background,h2-bg1,h4-bg2,udp,4.86,4.8599,0.1375,0.0,0,2170,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,1,gen18,background,h3-bg2,h1-bg1,udp,3.49,3.2735,0.3139,6.1898,270,4362,,,edge3 -> core1 -> edge2 -> edge1,serwer
+lllb,1,gen19,background,h4-bg2,h2-bg1,udp,2.93,2.6433,0.5343,9.5557,600,6279,,,edge4 -> edge3 -> core1 -> edge2,serwer
+lllb,1,gen20,background,h1-bg2,h4-bg2,udp,5.68,5.6795,0.0215,0.0,0,4,,,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,1,gen21,background,h4-bg1,h2-bg1,udp,3.04,3.0405,0.0433,0.0,0,2444,,,edge4 -> core3 -> edge2,serwer
+lllb,1,gen22,background,h4-bg1,h2-bg1,udp,3.69,5.6423,0.0162,0.0,0,1,,,edge4 -> core3 -> edge2,serwer
+lllb,1,gen23,background,h2-bg2,h4-bg2,udp,1.26,1.2599,0.043,0.0,0,1688,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,1,gen24,background,h3-bg1,h1-bg2,udp,4.88,4.2549,0.5965,12.5813,58,461,,,edge3 -> core1 -> edge1,serwer
+lllb,1,gen25,background,h4-bg1,h1-bg2,udp,3.51,3.3003,0.6332,0.0,0,11,,,edge4 -> core2 -> edge1,serwer
+lllb,1,gen26,background,h1-bg1,h4-bg1,udp,5.23,5.1759,0.3602,0.7984,93,11649,,,edge1 -> core1 -> edge3 -> edge4,serwer
+lllb,1,gen27,background,h1-bg2,h4-bg1,udp,2.1,2.1057,0.028,0.0,0,188,,,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,1,gen28,background,h4-bg1,h1-bg2,udp,1.54,1.541,0.0373,0.0,0,688,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,1,gen29,background,h4-bg1,h1-bg2,udp,1.53,1.5346,0.0337,0.0,0,274,,,edge4 -> core2 -> edge1,serwer
+lllb,1,gen30,background,h1-bg2,h3-bg1,udp,3.69,3.6845,0.0116,0.0,0,329,,,edge1 -> core2 -> edge3,serwer
+lllb,1,gen31,background,h2-bg1,h4-bg2,udp,2.18,4.0043,0.0451,0.0,0,1,,,edge2 -> core3 -> edge4,serwer
+lllb,1,gen32,background,h4-bg2,h3-bg2,udp,5.19,4.8095,0.3397,7.3263,713,9732,,,edge4 -> core2 -> edge3,serwer
+lllb,1,gen33,background,h4-bg2,h3-bg2,udp,2.6,2.0154,0.5819,22.6721,56,247,,,edge4 -> edge3,serwer
+lllb,1,gen34,background,h2-bg2,h3-bg2,udp,1.75,1.7356,0.3728,0.8317,26,3126,,,edge2 -> core1 -> edge3,serwer
+lllb,1,gen35,background,h4-bg2,h2-bg1,udp,5.89,4.7755,0.4526,18.5736,1362,7333,,,edge4 -> core3 -> edge2,serwer
+lllb,1,gen36,background,h4-bg2,h3-bg1,udp,4.62,4.4103,0.6705,4.2547,159,3737,,,edge4 -> edge3,serwer
+lllb,1,gen37,background,h1-bg2,h2-bg2,udp,4.5,4.466,0.2608,1.4007,51,3641,,,edge1 -> edge2,serwer
+lllb,1,gen38,background,h2-bg1,h4-bg1,udp,4.23,4.2296,0.0477,0.0,0,6044,,,edge2 -> core1 -> core3 -> edge4,serwer
+lllb,1,gen39,background,h1-bg2,h4-bg2,udp,5.93,5.1689,0.5581,12.5,4,32,,,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,1,gen40,background,h1-bg1,h3-bg1,udp,5.99,3.1654,0.9372,46.0317,29,63,,,edge1 -> core2 -> edge3,serwer
+lllb,1,gen41,background,h1-bg2,h3-bg1,udp,4.47,3.8318,0.4236,16.8287,277,1646,,,edge1 -> core2 -> edge3,serwer
+lllb,1,gen42,background,h1-bg2,h3-bg1,udp,2.82,1.9372,0.9763,31.384,161,513,,,edge1 -> core2 -> edge3,serwer
+lllb,1,gen43,background,h4-bg2,h2-bg1,udp,4.98,2.6606,0.2761,46.3983,219,472,,,edge4 -> core3 -> edge2,serwer
+lllb,1,gen44,background,h4-bg2,h1-bg2,udp,5.97,5.0321,0.4849,15.6506,172,1099,,,edge4 -> core2 -> edge1,serwer
+lllb,1,gen45,background,h3-bg1,h4-bg1,udp,5.74,5.7366,0.0346,0.0,0,5182,,,edge3 -> core2 -> edge4,serwer
+lllb,1,gen46,background,h2-bg1,h1-bg2,udp,1.89,1.8902,0.0493,0.0,0,844,,,edge2 -> edge1,serwer
+lllb,1,gen47,background,h2-bg2,h3-bg1,udp,2.94,2.9049,0.6106,1.9376,41,2116,,,edge2 -> core1 -> edge3,serwer
+lllb,1,gen48,background,h3-bg1,h1-bg1,udp,3.58,3.5782,0.0606,0.0,0,2241,,,edge3 -> core1 -> edge1,serwer
+lllb,1,gen49,background,h4-bg1,h2-bg1,udp,5.93,5.4577,0.1248,9.0231,242,2682,,,edge4 -> core3 -> edge2,serwer
+lllb,1,gen50,background,h4-bg1,h1-bg1,udp,3.2,3.2038,0.0442,0.0,0,573,,,edge4 -> edge3 -> core1 -> edge1,serwer
+lllb,1,gen51,background,h4-bg2,h3-bg1,udp,1.53,1.5304,0.0317,0.0,0,820,,,edge4 -> edge3,serwer
+lllb,1,gen52,background,h4-bg2,h2-bg2,udp,2.44,2.439,0.0377,0.0,0,1089,,,edge4 -> core3 -> edge2,serwer
+lllb,2,gen01,background,h1-bg2,h2-bg2,udp,2.45,2.4531,0.0268,0.0,0,438,,,edge1 -> edge2,serwer
+lllb,2,gen02,background,h1-bg1,h2-bg1,udp,3.57,3.5698,0.0339,0.0,0,1594,,,edge1 -> edge2,serwer
+lllb,2,gen03,background,h4-bg1,h3-bg1,udp,4.46,4.4614,0.0561,0.0,0,1195,,,edge4 -> core2 -> edge3,serwer
+lllb,2,gen04,background,h1-bg2,h3-bg1,udp,4.09,3.7116,0.4871,9.2608,778,8401,,,edge1 -> core2 -> edge4 -> edge3,serwer
+lllb,2,gen05,background,h1-bg2,h4-bg1,udp,5.79,5.7092,0.5092,0.2348,6,2555,,,edge1 -> core2 -> edge4,serwer
+lllb,2,gen06,background,h3-bg1,h1-bg1,udp,1.48,1.4784,0.0207,0.0,0,132,,,edge3 -> core1 -> edge1,serwer
+lllb,2,gen07,background,h2-bg2,h1-bg2,udp,4.74,16.4464,0.0288,0.0,0,1,,,edge2 -> core1 -> edge1,serwer
+lllb,2,gen08,background,h1-bg1,h4-bg2,udp,4.4,3.6765,0.5832,16.4378,2777,16894,,,edge1 -> core1 -> edge3 -> edge4,serwer
+lllb,2,gen09,background,h3-bg2,h2-bg1,udp,4.15,3.722,0.4589,10.3165,841,8152,,,edge3 -> core1 -> edge2,serwer
+lllb,2,vid1,video,h1-video,h4-video,udp,3.0,2.9473,0.4603,1.7491,164,9376,58.25,118.0,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,2,gen10,background,h2-bg1,h1-bg2,udp,5.97,5.9692,0.0481,0.0,0,2666,,,edge2 -> edge1,serwer
+lllb,2,gen11,background,h3-bg2,h4-bg1,udp,5.2,4.8737,0.2343,5.8932,574,9740,,,edge3 -> edge4,serwer
+lllb,2,gen12,background,h2-bg1,h1-bg1,udp,1.07,1.0705,0.0588,0.0,0,478,,,edge2 -> core1 -> edge1,serwer
+lllb,2,vid2,video,h2-video,h4-video,udp,3.0,2.7042,0.4884,10.0361,835,8320,58.2,117.0,edge2 -> core3 -> edge4,serwer
+lllb,2,gen13,background,h3-bg1,h2-bg1,udp,3.02,2.0965,0.444,30.5085,576,1888,,,edge3 -> core1 -> edge2,serwer
+lllb,2,gen14,background,h1-bg2,h2-bg2,udp,1.3,1.3,0.083,0.0,0,1045,,,edge1 -> edge2,serwer
+lllb,2,gen15,background,h1-bg1,h4-bg2,udp,1.61,1.2734,0.4031,20.9173,301,1439,,,edge1 -> core2 -> edge4,serwer
+lllb,2,gen16,background,h1-bg1,h4-bg1,udp,5.61,4.9418,0.6442,11.9333,658,5514,,,edge1 -> core2 -> edge4,serwer
+lllb,2,gen17,background,h1-bg2,h2-bg1,udp,1.89,1.887,0.3151,0.0,0,675,,,edge1 -> edge2,serwer
+lllb,2,gen18,background,h2-bg2,h1-bg1,udp,5.8,5.6028,0.0426,0.0,0,1,,,edge2 -> core1 -> edge1,serwer
+lllb,2,gen19,background,h1-bg2,h4-bg1,udp,4.94,3.4111,0.6447,30.7025,2159,7032,,,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,2,gen20,background,h4-bg2,h1-bg1,udp,2.5,2.1367,0.7086,15.0,3,20,,,edge4 -> core2 -> edge1,serwer
+lllb,2,gen21,background,h4-bg2,h1-bg1,udp,1.66,1.657,0.0468,0.0,0,157,,,edge4 -> core2 -> edge1,serwer
+lllb,2,gen22,background,h2-bg1,h1-bg1,udp,2.98,2.8273,0.2252,5.1183,463,9046,,,edge2 -> edge1,serwer
+lllb,2,gen23,background,h4-bg2,h1-bg1,udp,3.88,3.8784,0.0458,0.0,0,21,,,edge4 -> core2 -> edge1,serwer
+lllb,2,gen24,background,h3-bg2,h1-bg2,udp,2.17,2.1278,0.6507,1.9608,19,969,,,edge3 -> core2 -> edge1,serwer
+lllb,2,gen25,background,h3-bg1,h2-bg2,udp,5.95,5.4981,0.5686,7.5948,527,6939,,,edge3 -> core1 -> edge2,serwer
+lllb,2,gen26,background,h2-bg1,h1-bg2,udp,2.83,2.7045,0.5047,4.2677,366,8576,,,edge2 -> core1 -> edge1,serwer
+lllb,2,gen27,background,h3-bg2,h2-bg2,udp,1.02,0.7444,0.6297,33.3333,2,6,,,edge3 -> edge4 -> core3 -> edge2,serwer
+lllb,2,gen28,background,h4-bg1,h3-bg2,udp,5.01,4.8997,0.1776,2.1872,118,5395,,,edge4 -> edge3,serwer
+lllb,2,gen29,background,h4-bg2,h1-bg2,udp,4.46,4.5667,0.0432,0.0,0,25,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,2,gen30,background,h1-bg1,h3-bg1,udp,3.68,2.2637,0.8895,38.587,142,368,,,edge1 -> edge2 -> core1 -> edge3,serwer
+lllb,2,gen31,background,h2-bg1,h1-bg2,udp,1.08,1.1139,0.5088,0.0,0,6,,,edge2 -> core1 -> edge1,serwer
+lllb,2,gen32,background,h4-bg1,h3-bg1,udp,4.19,4.1842,0.1356,0.0,0,1894,,,edge4 -> core2 -> edge3,serwer
+lllb,2,gen33,background,h2-bg1,h3-bg1,udp,4.16,3.6895,0.615,11.6321,1347,11580,,,edge2 -> core1 -> edge3,serwer
+lllb,2,gen34,background,h1-bg2,h3-bg1,udp,5.69,3.7456,0.7467,34.1702,1225,3585,,,edge1 -> core1 -> edge3,serwer
+lllb,2,gen35,background,h3-bg1,h1-bg1,udp,2.03,2.0341,0.0358,0.0,0,22,,,edge3 -> core2 -> edge1,serwer
+lllb,2,gen36,background,h2-bg1,h1-bg1,udp,1.58,1.5811,0.0547,0.0,0,706,,,edge2 -> edge1,serwer
+lllb,2,gen37,background,h2-bg1,h3-bg2,udp,2.37,2.3563,0.2605,1.013,28,2764,,,edge2 -> core3 -> edge4 -> edge3,serwer
+lllb,2,gen38,background,h3-bg2,h1-bg2,udp,5.81,4.9219,0.6041,15.3061,645,4214,,,edge3 -> core2 -> edge1,serwer
+lllb,2,gen39,background,h4-bg1,h1-bg2,udp,1.86,1.6902,0.4722,9.6353,177,1837,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,2,gen40,background,h4-bg2,h2-bg2,udp,4.94,4.7909,0.5367,3.0452,68,2233,,,edge4 -> core3 -> edge2,serwer
+lllb,2,gen41,background,h4-bg2,h2-bg2,udp,3.4,3.3579,0.1389,1.5081,101,6697,,,edge4 -> core3 -> edge2,serwer
+lllb,2,gen42,background,h3-bg1,h4-bg1,udp,5.18,5.0709,0.4055,0.0,0,28,,,edge3 -> edge4,serwer
+lllb,2,gen43,background,h2-bg1,h3-bg1,udp,2.13,1.4216,0.795,34.7826,16,46,,,edge2 -> edge1 -> core2 -> edge3,serwer
+lllb,2,gen44,background,h1-bg1,h3-bg1,udp,4.51,4.5425,0.0906,0.1407,4,2843,,,edge1 -> core2 -> edge3,serwer
+lllb,2,gen45,background,h2-bg2,h4-bg1,udp,1.86,1.3404,0.9119,34.375,11,32,,,edge2 -> edge1 -> core2 -> edge4,serwer
+lllb,2,gen46,background,h3-bg2,h4-bg2,udp,5.38,5.235,0.1769,3.0945,209,6754,,,edge3 -> core2 -> edge4,serwer
+lllb,2,gen47,background,h4-bg2,h1-bg1,udp,1.24,1.2405,0.0476,0.0,0,886,,,edge4 -> core2 -> edge1,serwer
+lllb,2,gen48,background,h2-bg2,h4-bg1,udp,4.34,4.3433,0.0421,0.0,0,388,,,edge2 -> edge1 -> core2 -> edge4,serwer
+lllb,2,gen49,background,h2-bg1,h1-bg1,udp,3.39,3.2284,0.4217,5.1224,249,4861,,,edge2 -> core1 -> edge1,serwer
+lllb,2,gen50,background,h1-bg2,h3-bg1,udp,1.81,1.7344,0.8647,3.2641,11,337,,,edge1 -> core1 -> edge3,serwer
+lllb,2,gen51,background,h2-bg2,h4-bg1,udp,1.39,1.1618,0.6387,0.0,0,3,,,edge2 -> core3 -> edge4,serwer
+lllb,2,gen52,background,h1-bg1,h2-bg1,udp,4.56,4.5598,0.0373,0.0,0,2850,,,edge1 -> edge2,serwer
+lllb,2,gen53,background,h4-bg2,h1-bg1,udp,2.66,2.6587,0.0746,0.0,0,2614,,,edge4 -> core2 -> edge1,serwer
+lllb,2,gen54,background,h4-bg2,h1-bg1,udp,2.95,6.0118,0.0548,0.0,0,1,,,edge4 -> core2 -> edge1,serwer
+lllb,2,gen55,background,h1-bg2,h2-bg1,udp,4.02,4.0185,0.0454,0.0,0,3231,,,edge1 -> core1 -> edge2,serwer
+lllb,2,gen56,background,h4-bg1,h3-bg1,udp,2.94,2.94,0.0496,0.0,0,2100,,,edge4 -> edge3,serwer
+lllb,2,gen57,background,h2-bg2,h1-bg1,udp,1.56,1.506,0.1826,4.3839,37,844,,,edge2 -> edge1,serwer
+lllb,2,gen58,background,h2-bg1,h1-bg2,udp,5.43,4.2391,0.458,20.6897,6,29,,,edge2 -> edge1,serwer
+lllb,2,gen59,background,h3-bg2,h1-bg1,udp,2.91,2.9089,0.0495,0.0,0,1301,,,edge3 -> core1 -> edge2 -> edge1,serwer
+lllb,3,gen01,background,h4-bg2,h2-bg1,udp,2.69,0.1784,0.0442,0.0,0,1,,,edge4 -> edge3 -> core1 -> edge2,serwer
+lllb,3,gen02,background,h1-bg1,h2-bg1,udp,1.59,1.5901,0.0365,0.0,0,710,,,edge1 -> edge2,serwer
+lllb,3,gen03,background,h1-bg1,h4-bg1,udp,2.36,2.3605,0.0295,0.0,0,1054,,,edge1 -> core2 -> edge4,serwer
+lllb,3,gen04,background,h2-bg1,h1-bg2,udp,4.8,4.7051,0.3566,1.9788,441,22286,,,edge2 -> edge1,serwer
+lllb,3,gen05,background,h4-bg1,h1-bg2,udp,5.61,4.9507,0.473,11.7593,766,6514,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,3,gen06,background,h3-bg1,h2-bg1,udp,5.81,4.8201,0.5404,17.0389,1503,8821,,,edge3 -> edge4 -> core3 -> edge2,serwer
+lllb,3,gen07,background,h1-bg2,h2-bg1,udp,2.58,2.027,0.4648,21.1283,779,3687,,,edge1 -> edge2,serwer
+lllb,3,gen08,background,h3-bg1,h4-bg1,udp,3.46,2.9043,0.4978,15.6222,531,3399,,,edge3 -> edge4,serwer
+lllb,3,gen09,background,h2-bg2,h3-bg1,udp,4.94,4.9405,0.0329,0.0,0,2206,,,edge2 -> core1 -> edge3,serwer
+lllb,3,gen10,background,h4-bg1,h2-bg1,udp,2.93,5.8091,0.0746,0.0,0,1,,,edge4 -> edge3 -> core1 -> edge2,serwer
+lllb,3,gen11,background,h4-bg2,h3-bg1,udp,2.92,2.9207,0.0364,0.0,0,1304,,,edge4 -> core2 -> edge3,serwer
+lllb,3,gen12,background,h1-bg1,h4-bg1,udp,4.29,3.5945,0.6273,16.1928,1492,9214,,,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,3,gen13,background,h3-bg1,h2-bg1,udp,1.91,1.9106,0.0438,0.0,0,853,,,edge3 -> core1 -> edge2,serwer
+lllb,3,gen14,background,h1-bg1,h3-bg2,udp,1.51,1.0675,0.5131,29.313,1502,5124,,,edge1 -> core2 -> edge4 -> edge3,serwer
+lllb,3,vid1,video,h1-video,h4-video,udp,3.0,2.3477,0.3468,21.7363,2038,9376,59.0,59.7,edge1 -> core2 -> edge4,serwer
+lllb,3,gen15,background,h3-bg2,h4-bg1,udp,3.2,3.2005,0.0586,0.0,0,1429,,,edge3 -> core2 -> edge4,serwer
+lllb,3,gen16,background,h2-bg2,h4-bg2,udp,5.77,5.6212,0.4833,2.2955,119,5184,,,edge2 -> core3 -> edge4,serwer
+lllb,3,gen17,background,h1-bg1,h2-bg2,udp,3.99,3.714,0.347,7.0465,1081,15341,,,edge1 -> edge2,serwer
+lllb,3,gen18,background,h4-bg2,h1-bg1,udp,2.07,0.4516,0.0616,0.0,0,3,,,edge4 -> edge3 -> core1 -> edge1,serwer
+lllb,3,gen19,background,h1-bg2,h2-bg1,udp,5.89,4.815,0.5795,18.2414,1253,6869,,,edge1 -> edge2,serwer
+lllb,3,vid2,video,h2-video,h4-video,udp,3.0,2.2373,0.758,25.2923,2098,8295,117.0,154.0,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,3,gen20,background,h2-bg1,h1-bg1,udp,4.3,3.8876,0.3149,9.0672,383,4224,,,edge2 -> core1 -> edge1,serwer
+lllb,3,gen21,background,h4-bg1,h3-bg2,udp,2.91,2.8819,0.1,1.2387,71,5732,,,edge4 -> core2 -> edge3,serwer
+lllb,3,gen22,background,h4-bg1,h1-bg2,udp,5.41,5.3544,0.0972,1.4282,97,6792,,,edge4 -> core2 -> edge1,serwer
+lllb,3,gen23,background,h4-bg1,h1-bg2,udp,3.19,2.7022,0.6325,15.3605,49,319,,,edge4 -> core2 -> edge1,serwer
+lllb,3,gen24,background,h4-bg1,h3-bg1,udp,1.01,1.0112,0.0506,0.0,0,632,,,edge4 -> edge3,serwer
+lllb,3,gen25,background,h1-bg1,h4-bg2,udp,3.34,2.3576,0.4137,29.5847,2123,7176,,,edge1 -> core2 -> edge4,serwer
+lllb,3,gen26,background,h1-bg1,h2-bg2,udp,2.15,2.0359,0.2179,5.5006,328,5963,,,edge1 -> core1 -> edge2,serwer
+lllb,3,gen27,background,h1-bg1,h2-bg1,udp,2.85,2.3429,0.7777,17.7734,455,2560,,,edge1 -> core1 -> edge2,serwer
+lllb,3,gen28,background,h3-bg2,h2-bg2,udp,5.19,5.189,0.065,0.0,0,8805,,,edge3 -> core1 -> edge2,serwer
+lllb,3,gen29,background,h1-bg1,h4-bg2,udp,5.98,4.2288,0.5989,29.2874,2659,9079,,,edge1 -> core2 -> edge4,serwer
+lllb,3,gen30,background,h4-bg1,h3-bg1,udp,2.23,2.2307,0.0525,0.0,0,996,,,edge4 -> edge3,serwer
+lllb,3,gen31,background,h1-bg2,h3-bg1,udp,2.33,2.0525,0.2752,12.066,855,7086,,,edge1 -> core1 -> edge3,serwer
+lllb,3,gen32,background,h2-bg1,h3-bg2,udp,1.04,0.9628,0.6381,14.8515,15,101,,,edge2 -> core1 -> edge3,serwer
+lllb,3,gen33,background,h2-bg1,h4-bg2,udp,4.07,3.0948,0.8896,23.5294,8,34,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,3,gen34,background,h1-bg2,h4-bg2,udp,1.68,1.3144,0.7586,19.7697,206,1042,,,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,3,gen35,background,h2-bg2,h1-bg1,udp,5.87,5.107,0.5379,13.0,962,7400,,,edge2 -> edge1,serwer
+lllb,3,gen36,background,h3-bg1,h4-bg2,udp,4.35,3.1513,0.5883,27.683,2693,9728,,,edge3 -> edge4,serwer
+lllb,3,gen37,background,h2-bg1,h4-bg1,udp,2.7,2.3349,0.4119,14.2689,243,1703,,,edge2 -> core3 -> edge4,serwer
+lllb,3,gen38,background,h3-bg1,h2-bg2,udp,2.04,2.0402,0.061,0.0,0,911,,,edge3 -> core1 -> core3 -> edge2,serwer
+lllb,3,gen39,background,h1-bg1,h3-bg2,udp,3.06,2.2132,0.4301,35.0,7,20,,,edge1 -> core2 -> edge3,serwer
+lllb,3,gen40,background,h4-bg2,h3-bg2,udp,2.32,2.0979,0.4192,9.2593,325,3510,,,edge4 -> edge3,serwer
+lllb,3,gen41,background,h1-bg1,h3-bg2,udp,1.63,1.3056,0.546,20.4638,750,3665,,,edge1 -> edge2 -> core1 -> edge3,serwer
+lllb,3,gen42,background,h2-bg2,h4-bg2,udp,5.64,4.1079,0.6135,27.7778,25,90,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,3,gen43,background,h4-bg2,h3-bg1,udp,5.24,4.8341,0.4619,7.7436,616,7955,,,edge4 -> edge3,serwer
+lllb,3,gen44,background,h1-bg2,h2-bg1,udp,3.53,3.536,0.1172,0.0823,6,7287,,,edge1 -> edge2,serwer
+lllb,3,gen45,background,h2-bg2,h4-bg1,udp,5.83,6.5274,0.0681,0.0,0,583,,,edge2 -> core3 -> edge4,serwer
+lllb,3,gen46,background,h4-bg1,h1-bg1,udp,5.26,5.2592,0.0498,0.0,0,7571,,,edge4 -> core2 -> edge1,serwer
+lllb,3,gen47,background,h2-bg1,h4-bg2,udp,1.95,1.4142,0.8463,27.7651,728,2622,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,3,gen48,background,h3-bg1,h4-bg1,udp,2.77,1.5813,0.6158,42.9096,1168,2722,,,edge3 -> edge4,serwer
+lllb,3,gen49,background,h2-bg2,h4-bg1,udp,4.23,3.4192,0.768,19.968,1371,6866,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,3,gen50,background,h4-bg2,h2-bg1,udp,1.22,1.2233,0.081,0.0,0,13,,,edge4 -> core3 -> edge2,serwer
+lllb,3,gen51,background,h2-bg2,h1-bg2,udp,1.21,0.7696,0.5761,36.3757,275,756,,,edge2 -> core1 -> edge1,serwer
+lllb,3,gen52,background,h2-bg1,h3-bg1,udp,2.44,2.1968,0.3962,10.5923,186,1756,,,edge2 -> core3 -> edge4 -> edge3,serwer
+lllb,3,gen53,background,h2-bg1,h1-bg1,udp,2.97,2.6257,0.5814,11.9871,447,3729,,,edge2 -> core1 -> edge1,serwer
+lllb,3,gen54,background,h3-bg1,h2-bg1,udp,1.89,1.6537,0.5217,12.7816,261,2042,,,edge3 -> core1 -> core3 -> edge2,serwer
+lllb,3,gen55,background,h4-bg1,h2-bg1,udp,1.71,1.5332,0.522,10.8724,167,1536,,,edge4 -> core3 -> edge2,serwer
+lllb,3,gen56,background,h4-bg2,h2-bg2,udp,5.23,4.8296,0.4449,8.2506,349,4230,,,edge4 -> core3 -> edge2,serwer
+lllb,3,gen57,background,h4-bg1,h1-bg2,udp,2.4,2.0606,0.5998,14.1791,152,1072,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,3,gen58,background,h1-bg2,h3-bg1,udp,4.76,8.5301,0.0575,0.0,0,1,,,edge1 -> core2 -> edge3,serwer
+lllb,3,gen59,background,h2-bg1,h4-bg2,udp,5.72,5.7208,0.0444,0.0,0,2554,,,edge2 -> core3 -> edge4,serwer
+lllb,4,gen01,background,h4-bg1,h1-bg1,udp,5.3,5.2916,0.2311,0.0,0,3782,,,edge4 -> edge3 -> core1 -> edge1,serwer
+lllb,4,gen02,background,h2-bg1,h4-bg1,udp,5.01,4.177,0.3736,15.8685,497,3132,,,edge2 -> core3 -> edge4,serwer
+lllb,4,gen03,background,h3-bg2,h4-bg2,udp,5.22,4.7446,0.5288,8.9905,879,9777,,,edge3 -> core2 -> edge4,serwer
+lllb,4,gen04,background,h3-bg1,h4-bg1,udp,4.57,4.5333,0.2713,0.0,0,411,,,edge3 -> core2 -> edge4,serwer
+lllb,4,gen05,background,h4-bg1,h3-bg2,udp,1.78,1.7046,0.7004,5.3483,43,804,,,edge4 -> core2 -> edge3,serwer
+lllb,4,gen06,background,h1-bg2,h3-bg2,udp,3.72,3.5434,0.267,5.0984,272,5335,,,edge1 -> core2 -> edge3,serwer
+lllb,4,gen07,background,h2-bg2,h3-bg1,udp,4.89,4.3951,0.5908,10.1449,266,2622,,,edge2 -> edge1 -> core2 -> edge3,serwer
+lllb,4,gen08,background,h1-bg2,h4-bg1,udp,1.35,1.3477,1.6262,1.6129,4,248,,,edge1 -> core1 -> edge3 -> edge4,serwer
+lllb,4,gen09,background,h4-bg1,h1-bg2,udp,2.78,2.7834,0.0574,0.0,0,497,,,edge4 -> core2 -> edge1,serwer
+lllb,4,gen10,background,h1-bg2,h4-bg1,udp,4.05,3.9627,1.031,4.3478,1,23,,,edge1 -> core1 -> edge3 -> edge4,serwer
+lllb,4,gen11,background,h3-bg2,h1-bg1,udp,5.06,4.8251,0.2696,5.0028,363,7256,,,edge3 -> edge4 -> core2 -> edge1,serwer
+lllb,4,gen12,background,h2-bg1,h3-bg1,udp,4.31,4.1829,0.1441,3.8856,91,2342,,,edge2 -> core3 -> edge4 -> edge3,serwer
+lllb,4,gen13,background,h2-bg1,h4-bg2,udp,1.33,1.3369,0.0412,0.0,0,836,,,edge2 -> core3 -> edge4,serwer
+lllb,4,gen14,background,h3-bg2,h1-bg2,udp,4.37,4.3695,0.0459,0.0,0,3122,,,edge3 -> core1 -> edge1,serwer
+lllb,4,vid1,video,h1-video,h4-video,udp,3.0,2.9738,0.3417,0.8638,81,9377,0.0415,59.5,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,4,vid2,video,h2-video,h4-video,udp,3.0,2.8097,0.2647,6.5249,543,8322,0.034,59.3,edge2 -> edge1 -> core2 -> edge4,serwer
+lllb,4,gen15,background,h3-bg1,h2-bg2,udp,5.7,4.9863,0.534,12.5184,510,4074,,,edge3 -> edge4 -> core3 -> edge2,serwer
+lllb,4,gen16,background,h1-bg1,h2-bg2,udp,2.83,2.8055,0.606,0.5138,22,4282,,,edge1 -> edge2,serwer
+lllb,4,gen17,background,h4-bg1,h2-bg2,udp,1.68,1.6796,0.0576,0.0,0,1659,,,edge4 -> core3 -> edge2,serwer
+lllb,4,gen18,background,h3-bg1,h4-bg2,udp,2.89,2.4431,0.7501,15.6711,446,2846,,,edge3 -> core2 -> edge4,serwer
+lllb,4,gen19,background,h4-bg1,h3-bg2,udp,1.66,1.6586,0.0494,0.0,0,157,,,edge4 -> edge3,serwer
+lllb,4,gen20,background,h1-bg1,h2-bg2,udp,2.89,2.8409,0.1802,1.6969,162,9547,,,edge1 -> core1 -> edge2,serwer
+lllb,4,gen21,background,h3-bg2,h1-bg1,udp,2.36,2.3597,0.0446,0.0,0,632,,,edge3 -> core1 -> edge1,serwer
+lllb,4,gen22,background,h3-bg1,h4-bg1,udp,1.02,1.1348,0.7606,14.2857,1,7,,,edge3 -> core2 -> edge4,serwer
+lllb,4,gen23,background,h4-bg1,h2-bg1,udp,4.04,3.8419,0.5664,4.9021,283,5773,,,edge4 -> core2 -> edge1 -> edge2,serwer
+lllb,4,gen24,background,h4-bg2,h1-bg1,udp,2.66,2.6546,0.368,0.0,0,3328,,,edge4 -> edge3 -> core1 -> edge1,serwer
+lllb,4,gen25,background,h1-bg1,h2-bg1,udp,5.06,4.2447,0.5486,17.8571,5,28,,,edge1 -> core1 -> edge2,serwer
+lllb,4,gen26,background,h2-bg2,h1-bg1,udp,2.48,2.4801,0.0605,0.0,0,443,,,edge2 -> edge1,serwer
+lllb,4,gen27,background,h1-bg1,h4-bg2,udp,4.15,4.1793,0.0413,0.1147,3,2615,,,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,4,gen28,background,h2-bg2,h4-bg1,udp,2.84,2.8557,0.6317,0.0,0,15,,,edge2 -> core3 -> edge4,serwer
+lllb,4,gen29,background,h4-bg1,h3-bg2,udp,1.29,1.1287,0.0388,0.0,0,6,,,edge4 -> edge3,serwer
+lllb,4,gen30,background,h4-bg2,h2-bg1,udp,1.78,1.7809,0.0529,0.0,0,318,,,edge4 -> core3 -> edge2,serwer
+lllb,4,gen31,background,h2-bg1,h3-bg1,udp,4.83,15.6425,0.0288,0.0,0,1,,,edge2 -> core1 -> edge3,serwer
+lllb,4,gen32,background,h3-bg2,h4-bg1,udp,4.0,3.9998,0.0423,0.0,0,5715,,,edge3 -> edge4,serwer
+lllb,4,gen33,background,h1-bg2,h3-bg2,udp,3.73,3.73,0.1544,0.0,0,2997,,,edge1 -> core2 -> edge3,serwer
+lllb,4,gen34,background,h4-bg1,h2-bg2,udp,3.13,3.1292,0.0924,0.0,0,5030,,,edge4 -> core3 -> edge2,serwer
+lllb,4,gen35,background,h4-bg1,h1-bg2,udp,3.83,3.829,0.0686,0.0,0,6841,,,edge4 -> edge3 -> core1 -> edge1,serwer
+lllb,4,gen36,background,h2-bg2,h3-bg2,udp,4.92,3.5525,0.4426,26.9231,7,26,,,edge2 -> core1 -> edge3,serwer
+lllb,4,gen37,background,h4-bg1,h1-bg1,udp,3.99,3.9884,0.0572,0.0,0,356,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,4,gen38,background,h2-bg2,h4-bg1,udp,5.32,5.3207,0.0654,0.0,0,476,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,4,gen39,background,h2-bg2,h3-bg1,udp,2.41,2.4137,0.0499,0.0,0,431,,,edge2 -> core1 -> edge3,serwer
+lllb,4,gen40,background,h4-bg2,h1-bg2,udp,2.5,8.1812,0.0336,0.0,0,1,,,edge4 -> core2 -> edge1,serwer
+lllb,4,gen41,background,h3-bg2,h1-bg2,udp,5.92,5.19,0.0348,0.0,0,1,,,edge3 -> core2 -> edge1,serwer
+lllb,4,gen42,background,h2-bg2,h4-bg2,udp,4.61,4.6102,0.0433,0.0,0,6586,,,edge2 -> core3 -> edge4,serwer
+lllb,4,gen43,background,h1-bg1,h2-bg2,udp,5.57,5.5711,0.0454,0.0,0,498,,,edge1 -> core1 -> edge2,serwer
+lllb,4,gen44,background,h1-bg2,h4-bg1,udp,1.11,1.1111,0.0512,0.0,0,397,,,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,4,gen45,background,h2-bg2,h1-bg2,udp,2.04,2.0403,0.0388,0.0,0,911,,,edge2 -> edge1,serwer
+lllb,4,gen46,background,h3-bg2,h1-bg1,udp,2.65,3.6964,0.0644,0.0,0,1,,,edge3 -> core2 -> edge1,serwer
+lllb,4,gen47,background,h4-bg1,h3-bg1,udp,2.98,2.9794,0.0341,0.0,0,2661,,,edge4 -> edge3,serwer
+lllb,4,gen48,background,h3-bg2,h1-bg1,udp,4.17,4.1689,0.0418,0.0,0,2607,,,edge3 -> core2 -> edge1,serwer
+lllb,4,gen49,background,h4-bg1,h1-bg2,udp,5.72,5.5611,0.0288,0.0,0,3,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,4,gen50,background,h2-bg2,h1-bg1,udp,4.34,4.3399,0.0321,0.0,0,2325,,,edge2 -> core1 -> edge1,serwer
+lllb,4,gen51,background,h4-bg1,h2-bg1,udp,4.93,4.9317,0.0312,0.0,0,2642,,,edge4 -> core2 -> edge1 -> edge2,serwer
+lllb,5,gen01,background,h4-bg1,h3-bg1,udp,2.72,2.7188,0.0388,0.0,0,971,,,edge4 -> core2 -> edge3,serwer
+lllb,5,gen02,background,h4-bg1,h3-bg1,udp,3.09,3.0907,0.079,0.0,0,1380,,,edge4 -> core2 -> edge3,serwer
+lllb,5,gen03,background,h1-bg2,h2-bg1,udp,5.83,8.0114,0.0325,0.0,0,2,,,edge1 -> core1 -> edge2,serwer
+lllb,5,gen04,background,h1-bg1,h3-bg1,udp,2.15,2.1505,0.0334,0.0,0,1536,,,edge1 -> core2 -> edge4 -> edge3,serwer
+lllb,5,gen05,background,h3-bg2,h2-bg2,udp,1.17,1.1096,0.2278,5.1516,226,4387,,,edge3 -> core1 -> edge1 -> edge2,serwer
+lllb,5,gen06,background,h3-bg2,h4-bg1,udp,3.88,3.8855,0.0276,0.0,0,347,,,edge3 -> edge4,serwer
+lllb,5,gen07,background,h1-bg1,h2-bg2,udp,2.81,2.8116,0.0529,0.0,0,251,,,edge1 -> edge2,serwer
+lllb,5,gen08,background,h3-bg1,h1-bg1,udp,5.41,5.1579,1.6359,4.6669,248,5314,,,edge3 -> core2 -> edge1,serwer
+lllb,5,gen09,background,h3-bg2,h1-bg2,udp,1.55,1.5519,0.054,0.0,0,693,,,edge3 -> core1 -> edge1,serwer
+lllb,5,gen10,background,h3-bg2,h4-bg2,udp,5.4,5.0792,0.2285,5.7239,716,12509,,,edge3 -> edge4,serwer
+lllb,5,gen11,background,h3-bg1,h2-bg1,udp,1.2,1.191,0.2543,0.7776,5,643,,,edge3 -> core1 -> edge2,serwer
+lllb,5,gen12,background,h4-bg1,h2-bg1,udp,3.6,3.3962,0.309,5.363,653,12176,,,edge4 -> core3 -> edge2,serwer
+lllb,5,gen13,background,h1-bg2,h4-bg2,udp,2.9,2.7089,0.8073,6.2195,369,5933,,,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,5,gen14,background,h2-bg1,h3-bg2,udp,1.85,9.4515,0.0423,0.0,0,1,,,edge2 -> core1 -> edge3,serwer
+lllb,5,vid1,video,h1-video,h4-video,udp,3.0,2.7456,0.9725,8.3218,779,9361,0.04,118.0,edge1 -> core1 -> core3 -> edge4,serwer
+lllb,5,gen15,background,h1-bg2,h2-bg1,udp,5.06,5.0612,0.0391,0.0,0,2260,,,edge1 -> edge2,serwer
+lllb,5,gen16,background,h4-bg1,h2-bg1,udp,1.17,1.0996,0.5583,5.5749,192,3444,,,edge4 -> core3 -> edge2,serwer
+lllb,5,gen17,background,h4-bg2,h3-bg2,udp,5.76,5.4826,0.1313,4.8017,247,5144,,,edge4 -> core2 -> edge3,serwer
+lllb,5,vid2,video,h2-video,h4-video,udp,3.0,2.8816,0.8088,3.9374,327,8305,18.0,117.0,edge2 -> edge1 -> core2 -> edge4,serwer
+lllb,5,gen18,background,h2-bg2,h1-bg2,udp,5.97,6.411,0.075,0.3509,2,570,,,edge2 -> edge1,serwer
+lllb,5,gen19,background,h2-bg1,h1-bg2,udp,1.99,1.9894,0.0498,0.0,0,888,,,edge2 -> core1 -> edge1,serwer
+lllb,5,gen20,background,h3-bg2,h4-bg1,udp,2.33,2.3324,0.0386,0.0,0,417,,,edge3 -> core2 -> edge4,serwer
+lllb,5,gen21,background,h1-bg2,h3-bg2,udp,1.1,5.1756,0.0509,0.0,0,1,,,edge1 -> edge2 -> core1 -> edge3,serwer
+lllb,5,gen22,background,h2-bg1,h4-bg2,udp,3.45,3.4489,0.0398,0.0,0,1849,,,edge2 -> core3 -> edge4,serwer
+lllb,5,gen23,background,h4-bg2,h3-bg1,udp,3.84,3.8384,0.0365,0.0,0,1372,,,edge4 -> edge3,serwer
+lllb,5,gen24,background,h2-bg1,h1-bg2,udp,2.69,2.69,0.1579,0.0,0,7927,,,edge2 -> core1 -> edge1,serwer
+lllb,5,gen25,background,h2-bg2,h4-bg2,udp,1.62,1.6214,0.0456,0.0,0,724,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,5,gen26,background,h1-bg1,h4-bg1,udp,4.06,3.4967,0.6228,13.8021,53,384,,,edge1 -> core2 -> edge4,serwer
+lllb,5,gen27,background,h2-bg1,h4-bg1,udp,2.37,2.1054,0.2244,10.4019,176,1692,,,edge2 -> core1 -> edge3 -> edge4,serwer
+lllb,5,gen28,background,h1-bg2,h4-bg1,udp,3.78,3.4455,0.3172,7.706,130,1687,,,edge1 -> core2 -> edge4,serwer
+lllb,5,gen29,background,h4-bg1,h2-bg2,udp,2.51,1.4573,0.598,41.8655,193,461,,,edge4 -> core2 -> edge1 -> edge2,serwer
+lllb,5,gen30,background,h4-bg2,h3-bg1,udp,5.85,4.9944,0.5667,15.625,5,32,,,edge4 -> edge3,serwer
+lllb,5,gen31,background,h4-bg2,h3-bg2,udp,5.12,4.956,0.2167,3.3726,278,8243,,,edge4 -> edge3,serwer
+lllb,5,gen32,background,h1-bg2,h3-bg1,udp,3.45,3.4421,0.2356,0.5573,31,5563,,,edge1 -> edge2 -> core1 -> edge3,serwer
+lllb,5,gen33,background,h2-bg2,h3-bg1,udp,1.83,1.8297,0.2082,0.0,0,3104,,,edge2 -> core1 -> edge3,serwer
+lllb,5,gen34,background,h1-bg2,h4-bg2,udp,3.3,3.2355,0.1279,4.7776,58,1214,,,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,5,gen35,background,h1-bg1,h4-bg1,udp,4.4,2.842,0.8827,33.8373,649,1918,,,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,5,gen36,background,h3-bg1,h4-bg1,udp,1.34,1.1424,0.1746,16.1184,98,608,,,edge3 -> edge4,serwer
+lllb,5,gen37,background,h4-bg2,h3-bg1,udp,2.81,2.5588,0.4439,8.929,336,3763,,,edge4 -> core2 -> edge3,serwer
+lllb,5,gen38,background,h2-bg2,h4-bg2,udp,5.89,5.8642,0.1973,0.0,0,5238,,,edge2 -> edge1 -> core2 -> edge4,serwer
+lllb,5,gen39,background,h3-bg1,h2-bg2,udp,3.69,3.6839,0.1287,0.3443,25,7262,,,edge3 -> core1 -> edge2,serwer
+lllb,5,gen40,background,h1-bg2,h2-bg1,udp,4.72,4.4304,0.305,6.1243,542,8850,,,edge1 -> core1 -> edge2,serwer
+lllb,5,gen41,background,h3-bg2,h4-bg1,udp,5.63,5.6304,0.0523,0.0,0,10557,,,edge3 -> edge4,serwer
+lllb,5,gen42,background,h3-bg1,h2-bg1,udp,2.05,1.9973,0.9884,0.0,0,18,,,edge3 -> core1 -> core3 -> edge2,serwer
+lllb,5,gen43,background,h3-bg1,h2-bg2,udp,3.2,2.9052,0.1311,9.197,473,5143,,,edge3 -> core1 -> core3 -> edge2,serwer
+lllb,5,gen44,background,h1-bg1,h2-bg2,udp,1.0,0.8722,0.5556,13.3519,96,719,,,edge1 -> core1 -> edge2,serwer
+lllb,5,gen45,background,h4-bg2,h3-bg1,udp,5.07,4.4208,0.6176,12.8331,236,1839,,,edge4 -> core2 -> edge3,serwer
+lllb,5,gen46,background,h1-bg2,h3-bg1,udp,1.85,1.9402,0.5291,0.0,0,9,,,edge1 -> edge2 -> core1 -> edge3,serwer
+lllb,5,gen47,background,h4-bg1,h1-bg2,udp,3.57,3.1941,0.4312,11.6481,188,1614,,,edge4 -> core2 -> edge1,serwer
+lllb,5,gen48,background,h1-bg1,h4-bg1,udp,2.9,2.7358,0.2927,6.1185,192,3138,,,edge1 -> core1 -> edge3 -> edge4,serwer
+lllb,5,gen49,background,h4-bg2,h3-bg1,udp,4.41,4.3872,0.1544,1.3309,37,2780,,,edge4 -> edge3,serwer
+lllb,5,gen50,background,h1-bg1,h2-bg2,udp,1.91,1.9102,0.0468,0.0,0,1535,,,edge1 -> edge2,serwer
+lllb,5,gen51,background,h4-bg1,h1-bg1,udp,1.88,1.4482,0.4701,20.0,2,10,,,edge4 -> edge3 -> core2 -> edge1,serwer
+lllb,5,gen52,background,h1-bg1,h4-bg1,udp,1.36,1.327,0.0553,0.0,0,7,,,edge1 -> edge2 -> core3 -> edge4,serwer
+lllb,5,gen53,background,h4-bg1,h2-bg2,udp,4.15,3.9723,0.1301,5.5342,187,3379,,,edge4 -> core3 -> edge2,serwer
+lllb,5,gen54,background,h4-bg1,h1-bg1,udp,3.1,2.9027,0.5569,11.1111,2,18,,,edge4 -> core3 -> edge2 -> edge1,serwer
+lllb,5,gen55,background,h1-bg2,h4-bg1,udp,4.33,4.6608,0.0283,0.0,0,1,,,edge1 -> core2 -> edge4,serwer
+qos100,1,gen01,background,h2-bg1,h3-bg2,udp,4.49,3.8972,0.5348,7.98,64,802,,,edge2 -> core1 -> edge3,serwer
+qos100,1,gen02,background,h4-bg2,h3-bg1,udp,3.16,2.6113,0.5237,17.6471,3,17,,,edge4 -> edge3,serwer
+qos100,1,gen03,background,h4-bg1,h2-bg2,udp,5.25,3.3963,0.7918,32.0755,17,53,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen04,background,h4-bg1,h1-bg2,udp,3.56,2.9987,0.3728,15.7862,251,1590,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,gen05,background,h4-bg1,h3-bg1,udp,2.36,1.5417,0.318,34.6719,3799,10957,,,edge4 -> edge3,serwer
+qos100,1,gen06,background,h1-bg2,h2-bg1,udp,1.93,1.9306,0.0441,0.0,0,1379,,,edge1 -> edge2,serwer
+qos100,1,gen07,background,h2-bg1,h3-bg1,udp,1.39,1.2738,0.5929,12.5,1,8,,,edge2 -> core1 -> edge3,serwer
+qos100,1,gen08,background,h1-bg1,h2-bg1,udp,3.29,3.2903,0.0671,0.0,0,6757,,,edge1 -> edge2,serwer
+qos100,1,gen09,background,h3-bg2,h2-bg1,udp,4.51,3.2455,0.4153,27.2765,659,2416,,,edge3 -> core1 -> edge2,serwer
+qos100,1,gen10,background,h1-bg2,h3-bg1,udp,3.96,3.9398,0.0534,0.0,0,21,,,edge1 -> core1 -> edge3,serwer
+qos100,1,gen11,background,h2-bg1,h4-bg2,udp,5.85,5.472,0.3731,5.8149,274,4712,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,1,gen12,background,h1-bg2,h3-bg1,udp,4.9,4.9002,0.0531,0.0,0,2188,,,edge1 -> core1 -> edge3,serwer
+qos100,1,gen13,background,h4-bg1,h1-bg1,udp,3.07,1.9719,0.4764,35.6679,494,1385,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,vid1,video,h1-video,h4-video,udp,3.0,2.9997,0.0792,0.0,0,9376,0.032,0.053,edge1 -> core2 -> edge4,serwer
+qos100,1,gen14,background,h3-bg2,h1-bg2,udp,5.37,3.3227,0.5131,38.0521,2016,5298,,,edge3 -> core1 -> edge1,serwer
+qos100,1,vid2,video,h2-video,h4-video,udp,3.0,2.9884,0.0588,0.0,0,8320,0.028,0.059,edge2 -> core3 -> core2 -> edge4,serwer
+qos100,1,gen15,background,h3-bg1,h1-bg1,udp,3.12,1.5653,0.7426,49.8214,1813,3639,,,edge3 -> core1 -> edge1,serwer
+qos100,1,gen16,background,h2-bg1,h1-bg1,udp,4.96,4.9611,0.0424,0.0,0,2215,,,edge2 -> edge1,serwer
+qos100,1,gen17,background,h2-bg1,h4-bg2,udp,4.86,5.028,0.0225,0.0,0,27,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,1,gen18,background,h3-bg2,h1-bg1,udp,3.49,2.1296,0.4433,39.2515,1720,4382,,,edge3 -> core1 -> edge1,serwer
+qos100,1,gen19,background,h4-bg2,h2-bg1,udp,2.93,1.2965,0.617,55.7387,3516,6308,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen20,background,h1-bg2,h4-bg2,udp,5.68,5.6415,0.0425,0.0,0,31,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,1,gen21,background,h4-bg1,h2-bg1,udp,3.04,1.6634,0.7453,45.6162,1129,2475,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen22,background,h4-bg1,h2-bg1,udp,3.69,1.932,0.6709,43.2432,16,37,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen23,background,h2-bg2,h4-bg2,udp,1.26,1.0567,0.3097,15.3121,260,1698,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,1,gen24,background,h3-bg1,h1-bg2,udp,4.88,1.729,0.3917,64.8822,303,467,,,edge3 -> core1 -> edge1,serwer
+qos100,1,gen25,background,h4-bg1,h1-bg2,udp,3.51,1.7495,0.6952,54.5455,12,22,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,gen26,background,h1-bg1,h4-bg1,udp,5.23,4.8186,0.1547,7.8612,920,11703,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,1,gen27,background,h1-bg2,h4-bg1,udp,2.1,2.1005,0.0529,0.0,0,210,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,1,gen28,background,h4-bg1,h1-bg2,udp,1.54,0.366,0.2964,71.4286,5,7,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,gen29,background,h4-bg1,h1-bg2,udp,1.53,0.5269,0.3446,65.6028,185,282,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,gen30,background,h1-bg2,h3-bg1,udp,3.69,3.4325,0.9788,2.0,7,350,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,1,gen31,background,h2-bg1,h4-bg2,udp,2.18,1.7912,0.8276,17.6471,6,34,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,1,gen32,background,h4-bg2,h3-bg2,udp,5.19,2.1432,0.3685,58.7048,5729,9759,,,edge4 -> edge3,serwer
+qos100,1,gen33,background,h4-bg2,h3-bg2,udp,2.6,0.8654,0.3766,66.8016,165,247,,,edge4 -> edge3,serwer
+qos100,1,gen34,background,h2-bg2,h3-bg2,udp,1.75,1.3955,0.361,20.256,633,3125,,,edge2 -> core1 -> edge3,serwer
+qos100,1,gen35,background,h4-bg2,h2-bg1,udp,5.89,2.1598,0.7726,63.1828,4673,7396,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen36,background,h4-bg2,h3-bg1,udp,4.62,1.6156,0.2791,65.0161,2429,3736,,,edge4 -> edge3,serwer
+qos100,1,gen37,background,h1-bg2,h2-bg2,udp,4.5,3.9274,0.394,12.7177,460,3617,,,edge1 -> edge2,serwer
+qos100,1,gen38,background,h2-bg1,h4-bg1,udp,4.23,3.5027,0.6861,17.7876,1087,6111,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,1,gen39,background,h1-bg2,h4-bg2,udp,5.93,3.5067,0.3799,40.625,26,64,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,1,gen40,background,h1-bg1,h3-bg1,udp,5.99,2.6092,0.7649,54.8387,34,62,,,edge1 -> core1 -> edge3,serwer
+qos100,1,gen41,background,h1-bg2,h3-bg1,udp,4.47,3.1372,0.7281,30.3357,506,1668,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,1,gen42,background,h1-bg2,h3-bg1,udp,2.82,1.7323,0.7402,38.8385,214,551,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,1,gen43,background,h4-bg2,h2-bg1,udp,4.98,1.2286,1.0259,75.4955,419,555,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen44,background,h4-bg2,h1-bg2,udp,5.97,1.5678,0.8491,73.7196,878,1191,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,gen45,background,h3-bg1,h4-bg1,udp,5.74,5.5862,0.4824,2.0946,108,5156,,,edge3 -> edge4,serwer
+qos100,1,gen46,background,h2-bg1,h1-bg2,udp,1.89,1.8186,0.05,0.0,0,10,,,edge2 -> edge1,serwer
+qos100,1,gen47,background,h2-bg2,h3-bg1,udp,2.94,2.9398,0.044,0.0,0,2100,,,edge2 -> edge1 -> core1 -> edge3,serwer
+qos100,1,gen48,background,h3-bg1,h1-bg1,udp,3.58,3.5359,0.3061,1.9324,44,2277,,,edge3 -> core1 -> edge1,serwer
+qos100,1,gen49,background,h4-bg1,h2-bg1,udp,5.93,2.99,0.575,50.1822,1377,2744,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,1,gen50,background,h4-bg1,h1-bg1,udp,3.2,1.2117,0.6809,63.1405,382,605,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,1,gen51,background,h4-bg2,h3-bg1,udp,1.53,0.9016,0.4442,41.8773,348,831,,,edge4 -> edge3,serwer
+qos100,1,gen52,background,h4-bg2,h2-bg2,udp,2.44,1.9001,0.2257,23.1183,258,1116,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,2,gen01,background,h1-bg2,h2-bg2,udp,2.45,2.4528,0.029,0.0,0,438,,,edge1 -> core1 -> edge2,serwer
+qos100,2,gen02,background,h1-bg1,h2-bg1,udp,3.57,3.5705,0.027,0.0,0,1594,,,edge1 -> core1 -> edge2,serwer
+qos100,2,gen03,background,h4-bg1,h3-bg1,udp,4.46,4.4613,0.0668,0.0,0,1195,,,edge4 -> edge3,serwer
+qos100,2,gen04,background,h1-bg2,h3-bg1,udp,4.09,3.1575,0.6017,22.4325,1885,8403,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,2,gen05,background,h1-bg2,h4-bg1,udp,5.79,5.5211,0.5395,3.3333,1,30,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,2,gen06,background,h3-bg1,h1-bg1,udp,1.48,1.4784,0.0296,0.0,0,132,,,edge3 -> core1 -> edge1,serwer
+qos100,2,gen07,background,h2-bg2,h1-bg2,udp,4.74,7.6503,0.0336,0.0,0,1,,,edge2 -> edge1,serwer
+qos100,2,gen08,background,h1-bg1,h4-bg2,udp,4.4,3.2943,0.3318,25.1273,4245,16894,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,2,gen09,background,h3-bg2,h2-bg1,udp,4.15,2.7309,0.477,34.0113,2776,8162,,,edge3 -> core1 -> edge2,serwer
+qos100,2,vid1,video,h1-video,h4-video,udp,3.0,3.0,0.0475,0.0,0,9375,0.03,0.058,edge1 -> core2 -> edge4,serwer
+qos100,2,gen10,background,h2-bg1,h1-bg2,udp,5.97,5.6938,0.7115,3.5966,97,2697,,,edge2 -> core1 -> edge1,serwer
+qos100,2,gen11,background,h3-bg2,h4-bg1,udp,5.2,4.5745,0.2826,11.991,1172,9774,,,edge3 -> edge4,serwer
+qos100,2,gen12,background,h2-bg1,h1-bg1,udp,1.07,1.0705,0.0442,0.0,0,478,,,edge2 -> edge1,serwer
+qos100,2,vid2,video,h2-video,h4-video,udp,3.0,2.9998,0.0617,0.0,0,8303,0.031,0.069,edge2 -> core3 -> core2 -> edge4,serwer
+qos100,2,gen13,background,h3-bg1,h2-bg1,udp,3.02,1.3556,0.4166,55.0892,1050,1906,,,edge3 -> core1 -> edge2,serwer
+qos100,2,gen14,background,h1-bg2,h2-bg2,udp,1.3,1.3,0.0563,0.0,0,1045,,,edge1 -> edge2,serwer
+qos100,2,gen15,background,h1-bg1,h4-bg2,udp,1.61,0.6659,0.2492,58.3679,844,1446,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,2,gen16,background,h1-bg1,h4-bg1,udp,5.61,2.4033,0.7477,57.3712,3195,5569,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,2,gen17,background,h1-bg2,h2-bg1,udp,1.89,1.8903,0.072,0.0,0,675,,,edge1 -> edge2,serwer
+qos100,2,gen18,background,h2-bg2,h1-bg1,udp,5.8,4.9149,0.9207,16.129,5,31,,,edge2 -> edge1,serwer
+qos100,2,gen19,background,h1-bg2,h4-bg1,udp,4.94,1.5041,0.6301,69.5425,4925,7082,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,2,gen20,background,h4-bg2,h1-bg1,udp,2.5,1.4051,1.8617,29.1667,14,48,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen21,background,h4-bg2,h1-bg1,udp,1.66,0.5068,2.8447,69.7917,134,192,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen22,background,h2-bg1,h1-bg1,udp,2.98,2.9799,0.0492,0.0,0,9046,,,edge2 -> edge1,serwer
+qos100,2,gen23,background,h4-bg2,h1-bg1,udp,3.88,0.8441,0.6943,75.2809,67,89,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen24,background,h3-bg2,h1-bg2,udp,2.17,1.0016,0.3765,58.9744,23,39,,,edge3 -> core1 -> edge1,serwer
+qos100,2,gen25,background,h3-bg1,h2-bg2,udp,5.95,3.9909,0.5247,32.9096,2304,7001,,,edge3 -> core1 -> edge2,serwer
+qos100,2,gen26,background,h2-bg1,h1-bg2,udp,2.83,2.83,0.0714,0.0,0,8591,,,edge2 -> edge1,serwer
+qos100,2,gen27,background,h3-bg2,h2-bg2,udp,1.02,0.3732,0.535,62.5,10,16,,,edge3 -> core1 -> edge2,serwer
+qos100,2,gen28,background,h4-bg1,h3-bg2,udp,5.01,4.2251,0.3321,15.6031,846,5422,,,edge4 -> edge3,serwer
+qos100,2,gen29,background,h4-bg2,h1-bg2,udp,4.46,1.8762,0.9113,58.3333,42,72,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen30,background,h1-bg1,h3-bg1,udp,3.68,1.1891,0.5534,67.4863,247,366,,,edge1 -> core1 -> edge3,serwer
+qos100,2,gen31,background,h2-bg1,h1-bg2,udp,1.08,1.0818,0.0602,0.0,0,483,,,edge2 -> core1 -> edge1,serwer
+qos100,2,gen32,background,h4-bg1,h3-bg1,udp,4.19,3.9168,0.2734,5.8885,112,1902,,,edge4 -> edge3,serwer
+qos100,2,gen33,background,h2-bg1,h3-bg1,udp,4.16,3.298,0.5154,20.8737,2413,11560,,,edge2 -> core1 -> edge3,serwer
+qos100,2,gen34,background,h1-bg2,h3-bg1,udp,5.69,1.754,0.8774,69.1865,2526,3651,,,edge1 -> core1 -> edge3,serwer
+qos100,2,gen35,background,h3-bg1,h1-bg1,udp,2.03,0.1548,0.2809,69.697,23,33,,,edge3 -> core1 -> edge1,serwer
+qos100,2,gen36,background,h2-bg1,h1-bg1,udp,1.58,1.5812,0.0508,0.0,0,706,,,edge2 -> edge1,serwer
+qos100,2,gen37,background,h2-bg1,h3-bg2,udp,2.37,1.6548,0.7695,30.9975,867,2797,,,edge2 -> core1 -> edge3,serwer
+qos100,2,gen38,background,h3-bg2,h1-bg2,udp,5.81,3.4142,0.4004,41.2167,1748,4241,,,edge3 -> core1 -> edge1,serwer
+qos100,2,gen39,background,h4-bg1,h1-bg2,udp,1.86,1.256,0.7895,32.9594,617,1872,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen40,background,h4-bg2,h2-bg2,udp,4.94,3.1226,0.5547,36.8881,844,2288,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,2,gen41,background,h4-bg2,h2-bg2,udp,3.4,3.0124,0.2896,11.8717,803,6764,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,2,gen42,background,h3-bg1,h4-bg1,udp,5.18,4.86,0.4196,7.2727,4,55,,,edge3 -> edge4,serwer
+qos100,2,gen43,background,h2-bg1,h3-bg1,udp,2.13,1.6046,0.7375,32.0,8,25,,,edge2 -> core1 -> edge3,serwer
+qos100,2,gen44,background,h1-bg1,h3-bg1,udp,4.51,4.0482,0.7682,9.484,272,2868,,,edge1 -> core1 -> edge3,serwer
+qos100,2,gen45,background,h2-bg2,h4-bg1,udp,1.86,1.1905,0.62,36.6667,11,30,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,2,gen46,background,h3-bg2,h4-bg2,udp,5.38,5.3795,0.0442,0.0,0,6754,,,edge3 -> edge4,serwer
+qos100,2,gen47,background,h4-bg2,h1-bg1,udp,1.24,0.7144,1.218,42.3673,383,904,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen48,background,h2-bg2,h4-bg1,udp,4.34,3.8727,0.5754,10.7221,49,457,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,2,gen49,background,h2-bg1,h1-bg1,udp,3.39,3.3901,0.039,0.0,0,4843,,,edge2 -> edge1,serwer
+qos100,2,gen50,background,h1-bg2,h3-bg1,udp,1.81,1.8102,0.0672,0.0,0,333,,,edge1 -> core1 -> edge3,serwer
+qos100,2,gen51,background,h2-bg2,h4-bg1,udp,1.39,1.4091,0.0284,0.0,0,15,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,2,gen52,background,h1-bg1,h2-bg1,udp,4.56,4.5599,0.0373,0.0,0,2851,,,edge1 -> edge2,serwer
+qos100,2,gen53,background,h4-bg2,h1-bg1,udp,2.66,2.3401,0.2643,12.5,332,2656,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen54,background,h4-bg2,h1-bg1,udp,2.95,2.1189,1.0927,13.4615,7,52,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,2,gen55,background,h1-bg2,h2-bg1,udp,4.02,4.0186,0.0896,0.0,0,3234,,,edge1 -> edge2,serwer
+qos100,2,gen56,background,h4-bg1,h3-bg1,udp,2.94,2.9396,0.0393,0.0,0,2100,,,edge4 -> edge3,serwer
+qos100,2,gen57,background,h2-bg2,h1-bg1,udp,1.56,1.5429,0.3312,3.2749,28,855,,,edge2 -> core1 -> edge1,serwer
+qos100,2,gen58,background,h2-bg1,h1-bg2,udp,5.43,4.4133,0.9623,17.5439,10,57,,,edge2 -> core1 -> edge1,serwer
+qos100,2,gen59,background,h3-bg2,h1-bg1,udp,2.91,2.9113,0.0543,0.0,0,1300,,,edge3 -> core1 -> edge1,serwer
+qos100,3,gen01,background,h4-bg2,h2-bg1,udp,2.69,1.8575,0.503,28.5714,4,14,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,3,gen02,background,h1-bg1,h2-bg1,udp,1.59,1.5902,0.0347,0.0,0,710,,,edge1 -> edge2,serwer
+qos100,3,gen03,background,h1-bg1,h4-bg1,udp,2.36,2.3608,0.0431,0.0,0,1054,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,3,gen04,background,h2-bg1,h1-bg2,udp,4.8,3.4617,0.4221,27.802,6189,22261,,,edge2 -> core1 -> edge1,serwer
+qos100,3,gen05,background,h4-bg1,h1-bg2,udp,5.61,2.9841,0.7254,46.8046,3076,6572,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,3,gen06,background,h3-bg1,h2-bg1,udp,5.81,3.9554,0.6415,31.9096,2824,8850,,,edge3 -> core1 -> edge2,serwer
+qos100,3,gen07,background,h1-bg2,h2-bg1,udp,2.58,1.9453,0.4782,24.3082,896,3686,,,edge1 -> edge2,serwer
+qos100,3,gen08,background,h3-bg1,h4-bg1,udp,3.46,3.3022,0.2357,4.5602,155,3399,,,edge3 -> edge4,serwer
+qos100,3,gen09,background,h2-bg2,h3-bg1,udp,4.94,4.3431,0.638,0.0,0,40,,,edge2 -> edge1 -> core1 -> edge3,serwer
+qos100,3,gen10,background,h4-bg1,h2-bg1,udp,2.93,2.3054,0.5579,21.875,7,32,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,3,gen11,background,h4-bg2,h3-bg1,udp,2.92,3.2288,0.4406,0.0,0,8,,,edge4 -> edge3,serwer
+qos100,3,gen12,background,h1-bg1,h4-bg1,udp,4.29,2.2067,0.7669,48.2993,4473,9261,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen13,background,h3-bg1,h2-bg1,udp,1.91,1.1006,0.2202,40.0,4,10,,,edge3 -> core1 -> edge2,serwer
+qos100,3,gen14,background,h1-bg1,h3-bg2,udp,1.51,0.9173,0.8439,39.2126,2012,5131,,,edge1 -> core1 -> edge3,serwer
+qos100,3,vid1,video,h1-video,h4-video,udp,3.0,2.9897,0.0581,0.0,0,9404,0.03,0.062,edge1 -> core2 -> edge4,serwer
+qos100,3,gen15,background,h3-bg2,h4-bg1,udp,3.2,3.0744,0.3504,7.1429,2,28,,,edge3 -> edge4,serwer
+qos100,3,gen16,background,h2-bg2,h4-bg2,udp,5.77,4.7653,0.5416,17.3571,905,5214,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,3,gen17,background,h1-bg1,h2-bg2,udp,3.99,3.662,0.6479,8.224,1260,15321,,,edge1 -> edge2,serwer
+qos100,3,gen18,background,h4-bg2,h1-bg1,udp,2.07,0.5485,1.5714,72.4138,21,29,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,3,gen19,background,h1-bg2,h2-bg1,udp,5.89,4.5591,0.5919,22.5717,1550,6867,,,edge1 -> edge2,serwer
+qos100,3,vid2,video,h2-video,h4-video,udp,3.0,2.9885,0.0573,0.0,0,8320,0.032,0.061,edge2 -> core3 -> core2 -> edge4,serwer
+qos100,3,gen20,background,h2-bg1,h1-bg1,udp,4.3,4.2427,0.2849,0.7812,33,4224,,,edge2 -> edge1,serwer
+qos100,3,gen21,background,h4-bg1,h3-bg2,udp,2.91,2.125,0.5211,26.8386,1540,5738,,,edge4 -> edge3,serwer
+qos100,3,gen22,background,h4-bg1,h1-bg2,udp,5.41,3.3347,0.6768,38.6131,2645,6850,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,3,gen23,background,h4-bg1,h1-bg2,udp,3.19,0.6095,0.9014,81.6265,271,332,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,3,gen24,background,h4-bg1,h3-bg1,udp,1.01,0.8592,0.5323,15.8307,101,638,,,edge4 -> edge3,serwer
+qos100,3,gen25,background,h1-bg1,h4-bg2,udp,3.34,1.8467,0.3552,44.8429,3239,7223,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,3,gen26,background,h1-bg1,h2-bg2,udp,2.15,1.3639,0.5153,36.8307,2201,5976,,,edge1 -> core1 -> edge2,serwer
+qos100,3,gen27,background,h1-bg1,h2-bg1,udp,2.85,1.1864,0.5058,58.5859,1508,2574,,,edge1 -> core1 -> edge2,serwer
+qos100,3,gen28,background,h3-bg2,h2-bg2,udp,5.19,4.8065,0.3767,7.371,653,8859,,,edge3 -> core1 -> edge2,serwer
+qos100,3,gen29,background,h1-bg1,h4-bg2,udp,5.98,2.4151,0.8794,59.4595,5434,9139,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen30,background,h4-bg1,h3-bg1,udp,2.23,2.0748,0.5837,8.3333,1,12,,,edge4 -> edge3,serwer
+qos100,3,gen31,background,h1-bg2,h3-bg1,udp,2.33,1.0565,1.0276,54.8546,3904,7117,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,3,gen32,background,h2-bg1,h3-bg2,udp,1.04,0.4429,0.916,57.3913,66,115,,,edge2 -> core1 -> edge3,serwer
+qos100,3,gen33,background,h2-bg1,h4-bg2,udp,4.07,1.5152,0.9159,61.3208,65,106,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen34,background,h1-bg2,h4-bg2,udp,1.68,0.4022,0.9192,76.1167,835,1097,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen35,background,h2-bg2,h1-bg1,udp,5.87,5.815,0.2568,0.5292,39,7369,,,edge2 -> edge1,serwer
+qos100,3,gen36,background,h3-bg1,h4-bg2,udp,4.35,3.6935,0.361,15.293,1490,9743,,,edge3 -> edge4,serwer
+qos100,3,gen37,background,h2-bg1,h4-bg1,udp,2.7,0.7878,1.0148,70.8212,1216,1717,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen38,background,h3-bg1,h2-bg2,udp,2.04,2.5738,1.2415,0.0,0,28,,,edge3 -> core1 -> edge2,serwer
+qos100,3,gen39,background,h1-bg1,h3-bg2,udp,3.06,0.1888,0.6307,92.1053,35,38,,,edge1 -> core1 -> edge3,serwer
+qos100,3,gen40,background,h4-bg2,h3-bg2,udp,2.32,1.3018,0.4203,43.8646,1555,3545,,,edge4 -> edge3,serwer
+qos100,3,gen41,background,h1-bg1,h3-bg2,udp,1.63,1.3335,0.5231,18.7262,688,3674,,,edge1 -> core1 -> edge3,serwer
+qos100,3,gen42,background,h2-bg2,h4-bg2,udp,5.64,2.1734,0.7409,60.6742,54,89,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen43,background,h4-bg2,h3-bg1,udp,5.24,3.1245,0.3723,40.3596,3232,8008,,,edge4 -> edge3,serwer
+qos100,3,gen44,background,h1-bg2,h2-bg1,udp,3.53,3.4895,0.5514,1.3897,101,7268,,,edge1 -> edge2,serwer
+qos100,3,gen45,background,h2-bg2,h4-bg1,udp,5.83,1.9076,0.9749,67.5283,418,619,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen46,background,h4-bg1,h1-bg1,udp,5.26,3.1593,0.445,39.6852,3026,7625,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,3,gen47,background,h2-bg1,h4-bg2,udp,1.95,0.8184,0.7188,58.2704,1543,2648,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,3,gen48,background,h3-bg1,h4-bg1,udp,2.77,2.6633,0.3068,3.8545,106,2750,,,edge3 -> edge4,serwer
+qos100,3,gen49,background,h2-bg2,h4-bg1,udp,4.23,2.4537,0.5077,41.9845,2873,6843,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,3,gen50,background,h4-bg2,h2-bg1,udp,1.22,0.6557,1.2572,44.4444,12,27,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,3,gen51,background,h2-bg2,h1-bg2,udp,1.21,1.2129,0.2007,0.5202,4,769,,,edge2 -> edge1,serwer
+qos100,3,gen52,background,h2-bg1,h3-bg1,udp,2.44,0.8966,0.5088,63.2665,1104,1745,,,edge2 -> core1 -> edge3,serwer
+qos100,3,gen53,background,h2-bg1,h1-bg1,udp,2.97,2.9686,0.0441,0.0,0,3728,,,edge2 -> edge1,serwer
+qos100,3,gen54,background,h3-bg1,h2-bg1,udp,1.89,1.5928,0.1488,15.6767,322,2054,,,edge3 -> core1 -> edge2,serwer
+qos100,3,gen55,background,h4-bg1,h2-bg1,udp,1.71,1.1127,0.3543,35.4839,550,1550,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,3,gen56,background,h4-bg2,h2-bg2,udp,5.23,3.7519,0.5482,28.7324,1224,4260,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,3,gen57,background,h4-bg1,h1-bg2,udp,2.4,1.3095,0.4333,45.5776,505,1108,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,3,gen58,background,h1-bg2,h3-bg1,udp,4.76,4.6812,1.1584,1.9608,1,51,,,edge1 -> core1 -> edge3,serwer
+qos100,3,gen59,background,h2-bg1,h4-bg2,udp,5.72,3.5056,0.5895,38.891,1017,2615,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,4,gen01,background,h4-bg1,h1-bg1,udp,5.3,3.6489,0.5741,30.6677,1162,3789,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen02,background,h2-bg1,h4-bg1,udp,5.01,4.7075,0.3425,4.4366,139,3133,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,4,gen03,background,h3-bg2,h4-bg2,udp,5.22,5.0006,0.2097,4.1977,412,9815,,,edge3 -> edge4,serwer
+qos100,4,gen04,background,h3-bg1,h4-bg1,udp,4.57,3.7275,0.4104,18.4758,80,433,,,edge3 -> edge4,serwer
+qos100,4,gen05,background,h4-bg1,h3-bg2,udp,1.78,1.7727,0.5272,1.3699,11,803,,,edge4 -> edge3,serwer
+qos100,4,gen06,background,h1-bg2,h3-bg2,udp,3.72,3.1612,0.3325,15.3644,820,5337,,,edge1 -> core1 -> edge3,serwer
+qos100,4,gen07,background,h2-bg2,h3-bg1,udp,4.89,3.5253,0.4183,28.6195,765,2673,,,edge2 -> edge1 -> core1 -> edge3,serwer
+qos100,4,gen08,background,h1-bg2,h4-bg1,udp,1.35,0.9504,1.1062,29.4355,73,248,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,4,gen09,background,h4-bg1,h1-bg2,udp,2.78,1.7857,0.5987,35.9848,190,528,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen10,background,h1-bg2,h4-bg1,udp,4.05,2.2444,0.7854,44.8276,13,29,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,4,gen11,background,h3-bg2,h1-bg1,udp,5.06,2.5972,0.391,48.6632,3531,7256,,,edge3 -> core1 -> edge1,serwer
+qos100,4,gen12,background,h2-bg1,h3-bg1,udp,4.31,3.9259,0.1659,10.6768,254,2379,,,edge2 -> core1 -> edge3,serwer
+qos100,4,gen13,background,h2-bg1,h4-bg2,udp,1.33,1.3302,0.0556,0.0,0,846,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,4,gen14,background,h3-bg2,h1-bg2,udp,4.37,1.9745,0.3826,54.8122,1737,3169,,,edge3 -> core1 -> edge1,serwer
+qos100,4,vid1,video,h1-video,h4-video,udp,3.0,2.9998,0.0579,0.0,0,9407,0.031,0.05,edge1 -> core2 -> edge4,serwer
+qos100,4,vid2,video,h2-video,h4-video,udp,3.0,2.9999,0.0417,0.0,0,8320,0.029,0.054,edge2 -> core3 -> core2 -> edge4,serwer
+qos100,4,gen15,background,h3-bg1,h2-bg2,udp,5.7,2.5638,0.6914,54.6744,2275,4161,,,edge3 -> core1 -> edge2,serwer
+qos100,4,gen16,background,h1-bg1,h2-bg2,udp,2.83,2.8297,0.0513,0.0,0,4296,,,edge1 -> edge2,serwer
+qos100,4,gen17,background,h4-bg1,h2-bg2,udp,1.68,0.8373,1.0372,50.2085,843,1679,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,4,gen18,background,h3-bg1,h4-bg2,udp,2.89,2.6591,0.413,7.9225,225,2840,,,edge3 -> edge4,serwer
+qos100,4,gen19,background,h4-bg1,h3-bg2,udp,1.66,1.6268,0.7755,0.0,0,154,,,edge4 -> edge3,serwer
+qos100,4,gen20,background,h1-bg1,h2-bg2,udp,2.89,2.8898,0.0593,0.0,0,9548,,,edge1 -> edge2,serwer
+qos100,4,gen21,background,h3-bg2,h1-bg1,udp,2.36,0.8012,0.4549,65.7812,421,640,,,edge3 -> core1 -> edge1,serwer
+qos100,4,gen22,background,h3-bg1,h4-bg1,udp,1.02,1.0212,0.0396,0.0,0,456,,,edge3 -> edge4,serwer
+qos100,4,gen23,background,h4-bg1,h2-bg1,udp,4.04,2.7384,0.6535,32.0228,1857,5799,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,4,gen24,background,h4-bg2,h1-bg1,udp,2.66,1.8558,0.6806,29.9401,1000,3340,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen25,background,h1-bg1,h2-bg1,udp,5.06,5.9099,0.4726,0.0,0,29,,,edge1 -> core1 -> edge2,serwer
+qos100,4,gen26,background,h2-bg2,h1-bg1,udp,2.48,2.4796,0.0368,0.0,0,443,,,edge2 -> edge1,serwer
+qos100,4,gen27,background,h1-bg1,h4-bg2,udp,4.15,3.5713,0.4318,13.2177,343,2595,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,4,gen28,background,h2-bg2,h4-bg1,udp,2.84,2.7205,0.0355,0.0,0,19,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,4,gen29,background,h4-bg1,h3-bg2,udp,1.29,1.247,0.6959,0.0,0,13,,,edge4 -> edge3,serwer
+qos100,4,gen30,background,h4-bg2,h2-bg1,udp,1.78,1.4646,0.6194,17.9331,59,329,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,4,gen31,background,h2-bg1,h3-bg1,udp,4.83,3.7053,0.4393,23.0769,12,52,,,edge2 -> core1 -> edge3,serwer
+qos100,4,gen32,background,h3-bg2,h4-bg1,udp,4.0,3.9994,0.0419,0.0,0,5735,,,edge3 -> edge4,serwer
+qos100,4,gen33,background,h1-bg2,h3-bg2,udp,3.73,3.6685,0.3237,2.3518,71,3019,,,edge1 -> core1 -> edge3,serwer
+qos100,4,gen34,background,h4-bg1,h2-bg2,udp,3.13,1.9162,0.6567,38.626,1951,5051,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,4,gen35,background,h4-bg1,h1-bg2,udp,3.83,2.6785,0.6072,30.4752,2097,6881,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen36,background,h2-bg2,h3-bg2,udp,4.92,2.8192,0.7534,38.2979,18,47,,,edge2 -> core1 -> edge3,serwer
+qos100,4,gen37,background,h4-bg1,h1-bg1,udp,3.99,1.8199,0.689,54.2714,216,398,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen38,background,h2-bg2,h4-bg1,udp,5.32,4.3282,0.5991,18.609,99,532,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,4,gen39,background,h2-bg2,h3-bg1,udp,2.41,1.9022,0.5213,21.7002,97,447,,,edge2 -> core1 -> edge3,serwer
+qos100,4,gen40,background,h4-bg2,h1-bg2,udp,2.5,2.3361,0.8056,12.0,3,25,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen41,background,h3-bg2,h1-bg2,udp,5.92,4.291,0.3677,30.303,10,33,,,edge3 -> core1 -> edge1,serwer
+qos100,4,gen42,background,h2-bg2,h4-bg2,udp,4.61,4.6034,0.0491,0.0,0,6636,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,4,gen43,background,h1-bg1,h2-bg2,udp,5.57,5.5712,0.048,0.0,0,498,,,edge1 -> edge2,serwer
+qos100,4,gen44,background,h1-bg2,h4-bg1,udp,1.11,1.1115,0.0549,0.0,0,409,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,4,gen45,background,h2-bg2,h1-bg2,udp,2.04,2.0404,0.0435,0.0,0,911,,,edge2 -> edge1,serwer
+qos100,4,gen46,background,h3-bg2,h1-bg1,udp,2.65,1.3669,0.389,52.381,11,21,,,edge3 -> core1 -> edge1,serwer
+qos100,4,gen47,background,h4-bg1,h3-bg1,udp,2.98,1.8765,0.5635,37.0426,992,2678,,,edge4 -> edge3,serwer
+qos100,4,gen48,background,h3-bg2,h1-bg1,udp,4.17,3.2307,0.5806,22.5181,592,2629,,,edge3 -> core1 -> edge1,serwer
+qos100,4,gen49,background,h4-bg1,h1-bg2,udp,5.72,2.2808,0.5941,63.7681,44,69,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,4,gen50,background,h2-bg2,h1-bg1,udp,4.34,4.3417,0.0322,0.0,0,2326,,,edge2 -> edge1,serwer
+qos100,4,gen51,background,h4-bg1,h2-bg1,udp,4.93,3.8835,0.4239,22.7458,613,2695,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,5,gen01,background,h4-bg1,h3-bg1,udp,2.72,2.7185,0.038,0.0,0,971,,,edge4 -> edge3,serwer
+qos100,5,gen02,background,h4-bg1,h3-bg1,udp,3.09,3.0906,0.0878,0.0,0,1380,,,edge4 -> edge3,serwer
+qos100,5,gen03,background,h1-bg2,h2-bg1,udp,5.83,5.2905,0.0568,0.0,0,1,,,edge1 -> core1 -> edge2,serwer
+qos100,5,gen04,background,h1-bg1,h3-bg1,udp,2.15,2.1505,0.0468,0.0,0,1536,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,5,gen05,background,h3-bg2,h2-bg2,udp,1.17,0.9946,0.5613,14.7032,644,4380,,,edge3 -> core1 -> edge1 -> edge2,serwer
+qos100,5,gen06,background,h3-bg2,h4-bg1,udp,3.88,3.8546,0.0371,0.0,0,344,,,edge3 -> edge4,serwer
+qos100,5,gen07,background,h1-bg1,h2-bg2,udp,2.81,2.8119,0.0439,0.0,0,251,,,edge1 -> edge2,serwer
+qos100,5,gen08,background,h3-bg1,h1-bg1,udp,5.41,4.4592,0.6312,17.1402,911,5315,,,edge3 -> core1 -> edge1,serwer
+qos100,5,gen09,background,h3-bg2,h1-bg2,udp,1.55,1.1286,0.553,27.2468,191,701,,,edge3 -> core1 -> edge1,serwer
+qos100,5,gen10,background,h3-bg2,h4-bg2,udp,5.4,4.9327,0.3393,8.4397,1058,12536,,,edge3 -> edge4,serwer
+qos100,5,gen11,background,h3-bg1,h2-bg1,udp,1.2,0.8648,0.546,27.8891,181,649,,,edge3 -> core1 -> edge2,serwer
+qos100,5,gen12,background,h4-bg1,h2-bg1,udp,3.6,1.9648,0.6804,45.3581,5560,12258,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,5,gen13,background,h1-bg2,h4-bg2,udp,2.9,2.511,0.4953,13.311,796,5980,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen14,background,h2-bg1,h3-bg2,udp,1.85,1.7487,0.6734,0.0,0,15,,,edge2 -> edge1 -> core1 -> edge3,serwer
+qos100,5,vid1,video,h1-video,h4-video,udp,3.0,3.0,0.0571,0.0,0,9392,0.029,0.053,edge1 -> core2 -> edge4,serwer
+qos100,5,gen15,background,h1-bg2,h2-bg1,udp,5.06,11.7524,0.0415,0.0,0,1,,,edge1 -> core1 -> edge2,serwer
+qos100,5,gen16,background,h4-bg1,h2-bg1,udp,1.17,0.6421,0.6983,44.9884,1553,3452,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,5,gen17,background,h4-bg2,h3-bg2,udp,5.76,3.9277,0.6275,31.8129,1646,5174,,,edge4 -> edge3,serwer
+qos100,5,vid2,video,h2-video,h4-video,udp,3.0,2.9995,0.0526,0.0,0,8333,0.028,0.065,edge2 -> core3 -> core2 -> edge4,serwer
+qos100,5,gen18,background,h2-bg2,h1-bg2,udp,5.97,5.9689,0.0496,0.0,0,533,,,edge2 -> edge1,serwer
+qos100,5,gen19,background,h2-bg1,h1-bg2,udp,1.99,1.9891,0.0433,0.0,0,888,,,edge2 -> core1 -> edge1,serwer
+qos100,5,gen20,background,h3-bg2,h4-bg1,udp,2.33,2.2975,0.3084,0.0,0,429,,,edge3 -> edge4,serwer
+qos100,5,gen21,background,h1-bg2,h3-bg2,udp,1.1,1.1188,0.0511,0.0,0,6,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,5,gen22,background,h2-bg1,h4-bg2,udp,3.45,2.9049,0.5253,15.8088,301,1904,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen23,background,h4-bg2,h3-bg1,udp,3.84,3.1671,0.4538,18.75,261,1392,,,edge4 -> edge3,serwer
+qos100,5,gen24,background,h2-bg1,h1-bg2,udp,2.69,2.6901,0.049,0.0,0,7927,,,edge2 -> edge1,serwer
+qos100,5,gen25,background,h2-bg2,h4-bg2,udp,1.62,1.0346,0.3508,38.8889,7,18,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen26,background,h1-bg1,h4-bg1,udp,4.06,3.5549,1.4399,12.6464,54,427,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen27,background,h2-bg1,h4-bg1,udp,2.37,1.6339,0.8519,30.5006,524,1718,,,edge2 -> core1 -> edge3 -> edge4,serwer
+qos100,5,gen28,background,h1-bg2,h4-bg1,udp,3.78,2.3854,0.96,36.132,624,1727,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,5,gen29,background,h4-bg1,h2-bg2,udp,2.51,1.064,0.4949,57.384,272,474,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,5,gen30,background,h4-bg2,h3-bg1,udp,5.85,2.8074,0.5423,51.6129,32,62,,,edge4 -> edge3,serwer
+qos100,5,gen31,background,h4-bg2,h3-bg2,udp,5.12,2.6487,0.4215,48.2617,3998,8284,,,edge4 -> edge3,serwer
+qos100,5,gen32,background,h1-bg2,h3-bg1,udp,3.45,3.1237,0.5744,9.7754,544,5565,,,edge1 -> edge2 -> core1 -> edge3,serwer
+qos100,5,gen33,background,h2-bg2,h3-bg1,udp,1.83,1.6075,0.4199,12.4277,387,3114,,,edge2 -> core1 -> edge3,serwer
+qos100,5,gen34,background,h1-bg2,h4-bg2,udp,3.3,3.1104,0.2679,8.59,106,1234,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen35,background,h1-bg1,h4-bg1,udp,4.4,4.0253,0.755,7.1429,5,70,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen36,background,h3-bg1,h4-bg1,udp,1.34,1.1772,0.1861,13.2137,81,613,,,edge3 -> edge4,serwer
+qos100,5,gen37,background,h4-bg2,h3-bg1,udp,2.81,1.1729,0.4686,58.2609,2211,3795,,,edge4 -> edge3,serwer
+qos100,5,gen38,background,h2-bg2,h4-bg2,udp,5.89,5.2189,0.6161,11.3867,606,5322,,,edge2 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen39,background,h3-bg1,h2-bg2,udp,3.69,3.0515,0.8069,17.0725,1241,7269,,,edge3 -> core1 -> edge2,serwer
+qos100,5,gen40,background,h1-bg2,h2-bg1,udp,4.72,4.6508,0.3729,1.446,128,8852,,,edge1 -> edge2,serwer
+qos100,5,gen41,background,h3-bg2,h4-bg1,udp,5.63,5.6297,0.0466,0.0,0,10587,,,edge3 -> edge4,serwer
+qos100,5,gen42,background,h3-bg1,h2-bg1,udp,2.05,1.4615,0.8238,27.2727,6,22,,,edge3 -> core1 -> edge2,serwer
+qos100,5,gen43,background,h3-bg1,h2-bg2,udp,3.2,2.722,0.63,14.8643,767,5160,,,edge3 -> core1 -> edge2,serwer
+qos100,5,gen44,background,h1-bg1,h2-bg2,udp,1.0,0.9618,0.725,4.4506,32,719,,,edge1 -> edge2,serwer
+qos100,5,gen45,background,h4-bg2,h3-bg1,udp,5.07,1.7049,0.2778,66.3948,1221,1839,,,edge4 -> edge3,serwer
+qos100,5,gen46,background,h1-bg2,h3-bg1,udp,1.85,1.8899,0.0447,0.0,0,10,,,edge1 -> core1 -> edge3,serwer
+qos100,5,gen47,background,h4-bg1,h1-bg2,udp,3.57,0.8378,0.7444,76.5749,1252,1635,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,5,gen48,background,h1-bg1,h4-bg1,udp,2.9,2.8985,0.0994,0.0,0,3137,,,edge1 -> core1 -> core3 -> edge4,serwer
+qos100,5,gen49,background,h4-bg2,h3-bg1,udp,4.41,3.0719,0.2467,31.0728,866,2787,,,edge4 -> edge3,serwer
+qos100,5,gen50,background,h1-bg1,h2-bg2,udp,1.91,1.2929,0.378,31.8689,486,1525,,,edge1 -> core1 -> edge2,serwer
+qos100,5,gen51,background,h4-bg1,h1-bg1,udp,1.88,0.2863,0.6269,80.0,12,15,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,5,gen52,background,h1-bg1,h4-bg1,udp,1.36,1.2839,0.8331,0.0,0,18,,,edge1 -> core1 -> edge3 -> edge4,serwer
+qos100,5,gen53,background,h4-bg1,h2-bg2,udp,4.15,3.0129,0.8317,28.7967,986,3424,,,edge4 -> edge3 -> core1 -> edge2,serwer
+qos100,5,gen54,background,h4-bg1,h1-bg1,udp,3.1,2.0391,1.1166,40.5405,15,37,,,edge4 -> edge3 -> core1 -> edge1,serwer
+qos100,5,gen55,background,h1-bg2,h4-bg1,udp,4.33,4.3565,0.0407,0.0,0,46,,,edge1 -> core1 -> core3 -> edge4,serwer
