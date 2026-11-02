@@ -1,0 +1,27 @@
+# Warstwa 3 (dynamiczny limit BE = C - wideo*(1+0.1) - H, meter modyfikowany co 1 s) na Clos; H = 0 / 1.5 / 3 Mb/s.
+# Ten sam seed i harmonogram tła co w pozostałych seriach; kontroler po poprawce flow_stats_handler.
+# Dwa strumienie wideo (3 Mb/s, DSCP 46) zbiegają się na h4-video, na to losowe tło best-effort
+# (jak w reserve-sweep / mesh-lllb-vs-qos). Warianty m90/m80/m70 = qos + meter (100-R)% na łączach rezerwy.
+name: layers-clos-l3
+topology: sdn
+variants:
+  - {name: L3H0,   policy: qos, reserve_pct: 70, env: {LAYERS: 3, HEADROOM_MBPS: 0}}
+  - {name: L3H1.5, policy: qos, reserve_pct: 70, env: {LAYERS: 3, HEADROOM_MBPS: 1.5}}
+  - {name: L3H3,   policy: qos, reserve_pct: 70, env: {LAYERS: 3, HEADROOM_MBPS: 3}}
+duration: 60
+warmup: 5
+repetitions: 5
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

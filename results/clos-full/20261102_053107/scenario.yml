@@ -1,0 +1,35 @@
+# Pełna seria na Clos: ECMP (A), LLLB (B) i QoS-Aware (C, warstwa 1: meter OpenFlow) z rezerwą R = 100/90/70/50/30%.
+# Kontroler po poprawce flow_stats_handler; m = wariant z meterem na łączach rezerwy (limit tła (100-R)% łącza).
+# Dwa strumienie wideo (3 Mb/s, DSCP 46) zbiegają się na leaf4 (ok. 60% łącza rezerwowego spine1->leaf4),
+# a na to nakłada się losowe tło best-effort (jak w random-ecmp-lllb-rr). Inny harmonogram tła w każdym
+# powtórzeniu (seed + nr), wspólny dla wszystkich wariantów w danym powtórzeniu.
+name: clos-full
+topology: sdn
+topology_files:
+  sdn: topologies/clos-sdn.clab.yml
+  frr: topologies/clos-frr.clab.yml
+variants:
+  - ecmp
+  - lllb
+  - {name: qos100, policy: qos, reserve_pct: 100, env: {LAYERS: 1}}
+  - {name: m90, policy: qos, reserve_pct: 90, env: {LAYERS: 1}}
+  - {name: m70, policy: qos, reserve_pct: 70, env: {LAYERS: 1}}
+  - {name: m50, policy: qos, reserve_pct: 50, env: {LAYERS: 1}}
+  - {name: m30, policy: qos, reserve_pct: 30, env: {LAYERS: 1}}
+duration: 60
+warmup: 5
+repetitions: 5
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

@@ -1,0 +1,35 @@
+# Seria uzupełniająca na Clos: L2 (bramka "mieści się", R = 90/70/50/30%) i L3 (dynamiczny limit, zapas H = 0 / 1.5 / 3 Mb/s).
+# L3 nie zależy od R (limit z pomiaru wideo), więc krzywą tworzy H. Ten sam seed i harmonogramy co w clos-full.
+# Dwa strumienie wideo (3 Mb/s, DSCP 46) zbiegają się na leaf4 (ok. 60% łącza rezerwowego spine1->leaf4),
+# a na to nakłada się losowe tło best-effort (jak w random-ecmp-lllb-rr). Inny harmonogram tła w każdym
+# powtórzeniu (seed + nr), wspólny dla wszystkich wariantów w danym powtórzeniu.
+name: clos-layers
+topology: sdn
+topology_files:
+  sdn: topologies/clos-sdn.clab.yml
+  frr: topologies/clos-frr.clab.yml
+variants:
+  - {name: L2r90, policy: qos, reserve_pct: 90, env: {LAYERS: 2}}
+  - {name: L2r70, policy: qos, reserve_pct: 70, env: {LAYERS: 2}}
+  - {name: L2r50, policy: qos, reserve_pct: 50, env: {LAYERS: 2}}
+  - {name: L2r30, policy: qos, reserve_pct: 30, env: {LAYERS: 2}}
+  - {name: L3H0,   policy: qos, reserve_pct: 70, env: {LAYERS: 3, HEADROOM_MBPS: 0}}
+  - {name: L3H1.5, policy: qos, reserve_pct: 70, env: {LAYERS: 3, HEADROOM_MBPS: 1.5}}
+  - {name: L3H3,   policy: qos, reserve_pct: 70, env: {LAYERS: 3, HEADROOM_MBPS: 3}}
+duration: 60
+warmup: 5
+repetitions: 5
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true
