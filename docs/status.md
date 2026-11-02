@@ -1,10 +1,10 @@
-# Status projektu (ostatnia aktualizacja: 2026-11-01)
+# Status projektu (ostatnia aktualizacja: 2026-11-02)
 
 ## Pliki topologii (od 2026-11-01)
 | Plik | Co | Lab (`name:`) |
 |---|---|---|
-| `topologies/clos-frr.clab.yml` | wariant A, Clos 3 spine × 4 leaf, FRR (OSPF + ECMP) | `spine-leaf-3x4` |
-| `topologies/clos-sdn.clab.yml` | warianty B/C, Clos, OVS + Ryu (mgmt kontrolera 172.20.20.100) | `sdn` |
+| `topologies/clos-frr.clab.yml` | wariant A, Clos 3 spine × 4 leaf, FRR (OSPF + ECMP) | `clos-frr` |
+| `topologies/clos-sdn.clab.yml` | warianty B/C, Clos, OVS + Ryu (mgmt kontrolera 172.20.20.100) | `clos-sdn` |
 | `topologies/mesh-frr.clab.yml` | wariant A, mesh (4 edge + 3 core), FRR | `mesh-frr` |
 | `topologies/mesh-sdn.clab.yml` | warianty B/C, mesh, OVS + Ryu (mgmt kontrolera 172.20.20.101) | `mesh-sdn` |
 
@@ -13,8 +13,10 @@ Wszystkie cztery topologie mają po 7 przełączników/routerów, 12 hostów (h1
 10.1.L.10/11/12) i 12 łączy fabric 10 Mb/s (`burst 100kbit`) oraz 12 łączy hostów 100 Mb/s
 (`burst 320kbit`). Zbiór łączy i numery `ethN` są identyczne w parach SDN/FRR (sprawdzone
 skryptem). Mesh: edge1–edge2, edge3–edge4, edge↔core (po 2), core1–core3, core2–core3;
-przełączniki brzegowe dpid 1–4, core 0x11–0x13. **Mesh nie był jeszcze wdrażany w labie ani
-mierzony** (sprawdzone tylko parsowanie `mesh-sdn` przez `topo.py`, np. edge1→edge4: 1 ścieżka
+przełączniki brzegowe dpid 1–4, core 0x11–0x13. **Mesh SDN był wdrażany i mierzony
+(2026-11-01/02): wiarygodne są tylko lllb i qos100 (bez meterów); serie z meterami na mesh
+powstały z wadliwym kontrolerem i są unieważnione. `mesh-frr` (OSPF) nie był wdrażany ani
+mierzony** (sprawdzone parsowanie `mesh-sdn` przez `topo.py`, np. edge1→edge4: 1 ścieżka
 2-hopowa przez core2 + trzy 3-hopowe, oraz spójność /31, router-id i bindów w `mesh-frr`).
 W mesh najkrótsza ścieżka bywa jedna, więc OSPF-ECMP ma tam mniej równoważnych ścieżek niż
 SDN (`slack=1`) — różnica wynika z natury algorytmów.
@@ -59,9 +61,10 @@ portów, porty LIVE, `fail_mode: secure`, `is_connected: true`, tbf burst 12800b
 - Kontroler (mgmt 172.20.20.100:6653) uruchamia własną aplikację
 `controllers/controller_ryu.py` (klasa `Fabric`); binds: `../controllers:/controllers`
 i `../topologies:/topologies:ro`, plik topologii wskazuje `env: TOPO_FILE` (musi zgadzać się
-z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart clab-sdn-ryu-controller`;
-`env:` kontrolera: `POLICY: ${POLICY:=lllb}`, `RESERVE_PCT: ${RESERVE_PCT:=100}` (Containerlab
-podstawia zmienne powłoki przy deployu)
+z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart clab-clos-sdn-ryu-controller`;
+`env:` kontrolera: `POLICY: ${POLICY:=lllb}`, `RESERVE_PCT: ${RESERVE_PCT:=100}`,
+`LAYERS: ${LAYERS:=1}`, `MARGIN: ${MARGIN:=0.1}`, `HEADROOM_MBPS: ${HEADROOM_MBPS:=0}`
+(Containerlab podstawia zmienne powłoki przy deployu)
 - **Kontroler uniwersalny (niezależny od topologii)** — 2026-10-22:
   - `controllers/topo.py` (klasa `Topology`): wczytuje plik clab i z komend exec + `links`
   buduje model sieci: przełączniki (dpid z `datapath-id`, porty z `ofport_request`),
@@ -159,6 +162,44 @@ podstawia zmienne powłoki przy deployu)
   17 (nawet przy 95% na spine2/3); `R=70` → `[17×6, 18, 19]` (rezerwa do limitu 30%)
   - literówki w nazwie zdarzenia Ryu (`EventOFPFlowStatsReplay` zamiast `Reply`) wywalają
   import kontrolera od razu przy starcie
+- **Krok 10: drzewo wideo, metery OpenFlow i warstwy L1–L3 wariantu C** — 2026-11-01/02:
+  - rezerwa = **drzewo wideo** (`topo.video_tree()`, liczone raz w `__init__`): drzewo BFS
+  zakorzenione w węźle tranzytowym (Clos: spine, mesh: core), przycięte do przełączników
+  brzegowych; korzeń wybierany wg kryterium (max min/suma ścieżek best-effort omijających
+  rezerwę, min rozciągnięcie ścieżek wideo, min dpid). `topo.reserved` = skierowane pary
+  (dpid, port) łączy drzewa, `topo.video_path(src, dst)` = ścieżka wideo po drzewie
+  (zastępuje `paths[0]` z kroku 9). Pojemność łączy z `tbf rate` w pliku clab (`topo.capacity`,
+  `cap(hop)`) — koniec ze stałą 10 Mb/s. Mesh: reguły do kontrolera (prio 55) także na
+  przełączniku brzegowym tranzytu. Zmiana kształtu drzewa (korzeń tranzytowy) nie zmieniła
+  strat tła — wąskie gardło przeniosło się tylko w inne miejsce
+  - **L1** (`LAYERS=1`, domyślne): meter OpenFlow typu drop na każdym łączu rezerwy
+  (`meter_id` = numer portu, `OFPMeterMod ADD` przy połączeniu przełącznika, `burst_size=50`),
+  stawka `(100 − R)%` pojemności; reguły best-effort (prio 70) przechodzące przez łącze rezerwy
+  mają `OFPInstructionMeter`, wideo bez metera; bramka wejścia i rezerwacja +0,5 Mb/s jak
+  w kroku 9
+  - **L2** (`LAYERS=2`): bramka `fits(path)`: (zmierzone obciążenie best-effort + rezerwacje
+  oczekujące) + szacunek nowego przepływu ≤ limit na każdym łączu rezerwy. `pending`
+  (hop → [(klasa, b/s, wygasa)], TTL 2,5 s — przepływ pojawia się w `FlowStats` po dwóch
+  próbkach) zastępuje +0,5 Mb/s; szacunek best-effort `est_be` = EWMA 0,98/0,02 przepływności
+  best-effort z pierwszego przełącznika ścieżki (start 2 Mb/s), wideo 3 Mb/s (`VIDEO_EST_BPS`),
+  ICMP 0; `path_load` i `class_load` uwzględniają `pending`
+  - **L3** (`LAYERS=3`): limit best-effort na łączu rezerwy dynamiczny:
+  `max(C − wideo·(1 + MARGIN) − H, 0,3 Mb/s)` (wideo = zmierzone + oczekujące);
+  `_update_meters` co 1 s zmienia stawkę metera (`OFPMC_MODIFY`), gdy różnica ≥ 250 kb/s.
+  `MARGIN` (env, domyślnie 0,1) i `HEADROOM_MBPS` (env, H) = zapas na nowe wideo w czasie
+  opóźnienia reakcji (do ok. 2 s); `RESERVE_PCT` nie ma wpływu. Log:
+  `Meter <sw> port N: BE limit X kb/s`
+  - spill wideo sprawdza tylko obciążenie przez wideo: `class_load(vpath, "video") < SPILL`
+  - **błędy znalezione i naprawione (2026-11-02):**
+    1. `flow_stats_handler` czytał `stat.instructions[0].actions[0]`, a reguła z meterem ma
+    instrukcję metera na pierwszym miejscu → `AttributeError` w każdej odpowiedzi FlowStats z
+    przełączników z regułami best-effort na rezerwie; `class_bps` nie był odświeżany, a liczniki
+    rezerwacji nie malały. Serie `meter-sweep-clos`/`meter-sweep-mesh` (m90/m80/m70)
+    z tym błędem (1,0–1,6 tys. wyjątków na serię) są **nieważne**
+    2. spill wideo liczył `path_load` (całe łącze, razem z `pending` best-effort), więc drugi
+    strumień wideo uciekał z rezerwy (L2: utrata wideo 2–18% w 3–4 z 5 powtórzeń)
+    3. pingi wideo (ICMP, DSCP 46) liczyły się w `pending` jak 3 Mb/s i wywoływały spill —
+    teraz szacunek 0
 - **Narzędzie pomiarowe** (lokalny skill `.claude/skills/sdn-test-runner/`, poza repozytorium —
   `.claude` w `.gitignore`; scenariusze w `scenarios/*.yml`, kopia scenariusza w każdym wyniku):
   - `run_scenario.py scenarios/<nazwa>.yml [--only a,b] [--dry-run]`: dla każdego powtórzenia
@@ -176,6 +217,10 @@ podstawia zmienne powłoki przy deployu)
   (utrata = Σ utraconych / Σ wysłanych; przepływy ≤ warmup pominięte), potem średnia ± sd
   - uruchamianie bez sudo (użytkownik w grupie `clab_admins` i `docker`); matplotlib tylko
   w `.venv` (analizę puszczać `.venv/bin/python`)
+  - `analysis/summary_charts.py` (w repozytorium): wykresy zbiorcze (każdy osobnym PNG) i CSV z
+  danymi w `results/summary/` z serii `clos-full` i `clos-layers` (`.venv/bin/python
+  analysis/summary_charts.py`); metody: słupkowe, krzywe R i H, kompromis wideo/tło, przebiegi
+  czasowe, z meterem i bez. Źródło „najnowszy katalog” — usuwać puste/przerwane katalogi
 - **Wyniki pomiarów** (Clos, UDP `-l 1400`, wideo 3 Mb/s DSCP 46; pełne raporty w `results/`):
   - `lllb-vs-rr-basic` (5 pow., scenariusz deterministyczny): wideo LLLB 3,04 ± 2,10% strat,
   RR 0,00%; tło LLLB 0,07 / 0,03 / 0,01 / 3,53%, RR 30,5 / 44,2 / 6,3 / 44,6%; odrzuceń
@@ -200,6 +245,36 @@ podstawia zmienne powłoki przy deployu)
   w tej konstrukcji praktycznie nie chroni wideo, bo limit udziału best-effort to bramka
   wejścia (rozmiar nowego przepływu nieznany): w qos90 udział best-effort na rezerwie
   sięgał średnio 17–26% i do 40% (zamiast 10%)
+  - `mesh-lllb-vs-qos` 20261101_223056 (mesh, lllb i qos100, 5 pow., bez meterów): wideo lllb
+  9,56%, qos100 0,00%; tło lllb 6,55%, qos100 24,4% (koszt rezerwy w mesh większy niż w Clos);
+  20261101_220240 (starszy kształt drzewa) — podobnie
+  - **Wyniki końcowe na Clos z meterami** (kontroler po poprawkach z kroku 10; 5 pow., ten sam
+  seed i harmonogramy tła we wszystkich seriach, więc porównania są sparowane;
+  `results/clos-full/20261102_053107`, `results/clos-layers/20261102_062444`; wykresy i CSV
+  w `results/summary/`):
+
+    | wariant | wideo: utrata | tło: utrata ± sd | jitter wideo [ms] | RTT p95 wideo [ms] |
+    |---|---|---|---|---|
+    | ecmp (A) | 9,5% | 13,2 ± 6,1% | 0,26 | 88 |
+    | lllb (B) | 3,5% | 3,9 ± 3,3% | 0,24 | 89 |
+    | qos100 | 0,00% | 11,1 ± 4,5% | 0,09 | 0,06 |
+    | L1 m90 / m70 / m50 / m30 | 0 / 0 / 3,6 / 6,0% | 19,7 / 13,8 / 10,3 / 7,3% | 0,10 / 0,09 / 0,38 / 0,34 | 0,05 / 0,05 / 59 / 59 |
+    | L2 r90 / r70 / r50 / r30 | 0 / 0 / 2,7 / 3,9% | 14,2 / 12,7 / 9,4 / 7,1% | 0,12 / 0,12 / 0,36 / 0,42 | 0,06 / 0,08 / 59 / 59 |
+    | L3 H=0 / 1,5 / 3 Mb/s | 0,13 / 0 / 0% | 7,3 / 8,6 / 11,2% | 0,16 / 0,14 / 0,09 | 44 / 0,06 / 0,06 |
+
+  - **wnioski:** (1) metery chronią wideo, ale stały limit (L1/L2) ma wąskie okno: przy R ≥ 70
+  limit tła ≤ 3 Mb/s mieści się z wideo (6 Mb/s) na łączu 10 Mb/s; przy R ≤ 50 wideo traci
+  2,7–6,0% (kolejka, RTT p95 59 ms); (2) w L1 wyższe R pogarsza tło (m90: +8,7 ± 3,1 pkt proc.
+  względem qos100, 5/5 powtórzeń) — bramka wpuszcza przepływy, które meter potem dławi;
+  (3) L2 poprawia to względem L1 przy wysokim R (r90 − m90: −5,6 ± 2,8 pkt proc., 5/5), przy
+  niższym R różnica mieści się w szumie; (4) L3 z H = 1,5 Mb/s: wideo 0%, tło 8,6% (−2,5 ± 2,0
+  pkt proc. względem qos100, +4,6 ± 3,0 względem lllb); H = 0 daje najmniej strat tła, ale
+  wideo traci 0,13%, RTT p95 44 ms (reakcja metera do ok. 2 s); H = 3 ≈ pełna rezerwa;
+  (5) ecmp najgorszy dla wideo (9,5%), lllb pośredni (3,5%), każda rezerwa 0%, kosztem tła
+  (lllb ma najmniej strat tła)
+  - powtarzalność: ta sama konfiguracja zmierzona dwa razy (np. L1 R = 70, L3 H = 0/1,5/3) daje
+  różnice do ok. 2,6 pkt proc. utraty tła na powtórzenie; utrata wideo w lllb jest zmienna
+  (średnio 7,9% i 3,5% w dwóch seriach tych samych harmonogramów)
 - Podmiana samego kontrolera: `containerlab deploy -t clos-sdn.clab.yml --reconfigure`
 (pełny redeploy ok. 30 s; `destroy` kontrolera + `deploy --node-filter` działa tylko na labie
 bez pozostałych węzłów — containerlab 0.79 zgłasza błąd na wdrożonym labie)
@@ -213,20 +288,22 @@ uruchamianie i pomiary w kontenerze:
 - Ściągawka Ryu (dekorator `@set_ev_cls`, fazy, zdarzenia, skróty): `docs/ryu-sciagawka.md`
 
 ## Nie działa / nie zrobione
-- **Kolejki priorytetowe (macierz 2×2)** — zaplanowane, nie wykonane: {LLLB, qos100} ×
-{`tbf`, `htb` z priorytetem DSCP}; patrz „Następny krok”
-- **Miękka rezerwa (R < 100%) nie działa jako ochrona** — limit udziału best-effort jest
-bramką wejścia (rozmiar przepływu nieznany, brak przenoszenia po przyjęciu), więc best-effort
-zapełnia rezerwę ponad limit (qos90: średnio 17–26%, maks. 40% zamiast 10%). Faktycznie
-działa tylko R = 100%. To ograniczenie koncepcji, do opisania w pracy; rozwiązaniem są kolejki
-na łączu (gwarancja `rate` klasy wideo w `htb`)
+- **Kolejki priorytetowe (macierz 2×2)** — nie wykonane; zastąpione przez metery OpenFlow
+(warstwy L1–L3, decyzja 2026-11-01). Zostają jako opcjonalne porównanie
+- **Miękka rezerwa bez egzekwowania (sama bramka wejścia) nie chroni wideo** (qos90/70/50 bez
+metera: 5,5–5,8% utraty wideo, 2026-11-01). Z meterem chroni, ale stały limit ma wąskie okno:
+L1/L2 chronią wideo tylko dla R ≥ 70, przy R ≤ 50 wideo traci 2,7–6,0%; L3 (limit dynamiczny,
+H ≥ 1,5 Mb/s) chroni wideo i ma najmniej strat tła spośród wariantów z pełną ochroną.
+Ograniczenia: opóźnienie reakcji metera (do ok. 2 s), brak przenoszenia przepływów już
+przyjętych (tło dławione meterem zamiast przekierowane), dobór H pod scenariusz 2 × 3 Mb/s
 - Poziomy obciążenia tła 50/70/90% **nie są sterowane**: generator ma tylko `arrival_rate`,
 `duration_mean`, `rate`; losowe tło daje silne przeciążenie (MLU 102–125%, 8–19 z 24 łączy
 > 90% w powtórzeniu). Brak parametru „docelowe obciążenie” w runnerze
-- Mesh (`mesh-sdn`, `mesh-frr`) nie był wdrażany ani mierzony; brak sprawdzenia, że OSPF
-w `configs/frr/mesh/` zestawia sąsiadów Full
-- Pomiary tylko na Clos; n = 5 powtórzeń, bez testów istotności — do pracy potrzeba więcej
-powtórzeń (15–20)
+- Mesh: zmierzone tylko lllb i qos100 (bez meterów); L1–L3 na mesh i `mesh-frr` (ECMP) nie
+były mierzone, brak sprawdzenia, że OSPF w `configs/frr/mesh/` zestawia sąsiadów Full
+- Pomiary głównie na Clos; n = 5 powtórzeń, jeden poziom obciążenia, bez testów istotności —
+do pracy potrzeba więcej powtórzeń (15–20); różnice kilku punktów procentowych mieszczą się
+w odchyleniu
 - **Ograniczenie LLLB (cecha algorytmu, nie błąd):** przy Packet-In rozmiar przepływu jest
 nieznany, rezerwacja jest jednakowa (0,5 Mb/s) dla wideo i kanału sterującego, a decyzja
 zapada raz. Przy jednoczesnym starcie LLLB równoważy **liczbę** przepływów, nie pasmo —
@@ -235,12 +312,8 @@ dwa strumienie danych mogą trafić na jeden spine (test 3). Świadomie nie popr
 algorytm); motywacja dla C (DSCP mówi przy pierwszym pakiecie, że to wideo). W pomiarach:
 starty strumieni rozsunięte o ~2 s, jednoczesny start jako osobny scenariusz najgorszego
 przypadku
-- Przepustowość łącza w kontrolerze wpisana na sztywno (10 Mb/s w trzech miejscach:
-`path_load`, `class_load` i log `_monitor`) — musi zgadzać się z `tbf rate` w YAML; przy
-łączach o różnych prędkościach do zrobienia parsowanie `rate` w `topo.py` (lub stała
-`LINK_BPS`)
-- Domyślna wartość `TOPO_FILE` w `controller_ryu.py` wskazuje stary plik
-(`/topologies/sdn.clab.yaml`); nie przeszkadza, bo topologie podają `env: TOPO_FILE`
+- Przepustowość łączy kontroler czyta z `tbf rate` w pliku clab (`topo.capacity`); łącza spoza
+mapy mają zapasową wartość 10 Mb/s w `cap()`
 - Pierwsza linia `Links` po nowych przepływach pokazuje same rezerwacje (0,50 Mb/s na
 łączach wybranych ścieżek) — `_monitor` wypisuje `link_bps` przed nadejściem odpowiedzi;
 tylko kosmetyka logu
@@ -296,6 +369,11 @@ topologii; zmiana `binds`/`cmd`/`env` wymaga odtworzenia kontenera, zmiana sameg
 tylko `docker restart`. W containerlab 0.79 `deploy --node-filter` na już wdrożonym labie
 kończy się błędem („Node filter is not supported when reconciling deployed lab”), więc
 odtwarzanie kontrolera = `deploy --reconfigure` (cały lab)
+- Prefiks kontenerów to `clab-<name>-<węzeł>`, gdzie `name:` to pierwsza linia pliku topologii
+(nie nazwa pliku): `clab-clos-sdn-leaf1`, `clab-clos-frr-leaf1`, `clab-mesh-sdn-…`. Zmiana `name:` w pliku
+działającego labu zostawia stary lab „osierocony”: `destroy -t` szuka już nowej nazwy, a `destroy --all`
+go pomija; usunąć trzeba po etykiecie: `docker rm -f $(docker ps -aq --filter label=containerlab=<stara_nazwa>)`.
+Przy takiej zmianie najpierw `destroy`, potem edycja, potem `deploy`
 - Po przeniesieniu/zmianie nazwy plików pilnować: `env: TOPO_FILE` w topologii SDN
 (rozszerzenie `.yml`!), ścieżki `binds` do `configs/frr/...` w topologiach FRR,
 `DEFAULT_TOPOLOGIES` w `common.py` skilla i `topology_files` w scenariuszach — każdy z tych
@@ -336,7 +414,7 @@ bez połączeń). Zawsze `containerlab deploy -t clos-sdn.clab.yml --reconfigure
 objaw: host bez `eth1`, `ovs-vsctl` zgłasza `Connection refused`, runner przerywa przy
 sprawdzaniu labu
 - Po deployu odczekać, aż przełączniki się połączą — ping w pierwszych sekundach daje
-100% strat; sprawdzenie: `docker logs clab-sdn-ryu-controller 2>&1 | grep -c "connected from"` = 7
+100% strat; sprawdzenie: `docker logs clab-clos-sdn-ryu-controller 2>&1 | grep -c "connected from"` = 7
 - Wymagania matcha OF1.3: `tcp_*`/`udp_*` tylko razem z `eth_type=0x0800` i `ip_proto`
 (inaczej `OFPBMC_BAD_PREREQ`); OVS pokazuje to jako `udp,…,tp_src=…,tp_dst=…`
 - Packet-Out pierwszego pakietu wprost na port, nie `OFPP_TABLE` — reguła 70 może jeszcze
@@ -361,15 +439,18 @@ w `_monitor` (okno krótsze niż `idle_timeout`, żeby po wygaśnięciu reguł p
 - Ten sam przepływ ponownie w logu po > 10 s ciszy (np. kanał sterujący iperf3 na końcu
 testu) — to nie duplikat: reguła wygasła (`idle_timeout=10`), następny pakiet dostaje
 świeży wybór. Bez ryzyka reorderingu, bo w tym czasie nic nie płynęło
-- Zmiana `env:` kontrolera (np. `POLICY`) w YAML wymaga odtworzenia kontenera (destroy/deploy
-`--node-filter ryu-controller`) — `docker restart` zostawia stare zmienne; sprawdzenie:
-`docker exec clab-sdn-ryu-controller env | grep POLICY` i linia `Path selection policy` w logu
+- Zmiana `env:` kontrolera (np. `POLICY`) wymaga odtworzenia kontenera
+(`containerlab deploy --reconfigure`; runner robi to sam) — `docker restart` zostawia stare
+zmienne; sprawdzenie:
+`docker exec clab-clos-sdn-ryu-controller env | grep POLICY` i linia `Path selection policy` w logu
 - Wywołanie loggera z większą liczbą argumentów niż `%s` w formacie → `TypeError: not all
 arguments converted` (traceback w logu, linia nie zostaje wypisana, ruch działa dalej)
-- Przepustowość łączy jest pewna tylko z `tc`: `docker exec clab-sdn-leaf1 tc qdisc show dev eth1`
+- Przepustowość łączy jest pewna tylko z `tc`: `docker exec clab-clos-sdn-leaf1 tc qdisc show dev eth1`
 → `rate 10Mbit burst 12800b`; empirycznie iperf3 `-b 15M` → receiver ~9,5 Mb/s, `Links` ~100%
 - Statystyki przepływów w Ryu: `dict(stat.match.items())` daje pola dopasowania, a port
-wyjściowy to `stat.instructions[0].actions[0].port`; `OFPFlowStatsRequest(datapath)` bez
+wyjściowy trzeba wziąć z instrukcji `OFPInstructionActions` (reguła z meterem ma na pierwszym
+miejscu `OFPInstructionMeter` — `instructions[0].actions` kończy się `AttributeError`, który
+po cichu blokuje odświeżanie `class_bps`); `OFPFlowStatsRequest(datapath)` bez
 argumentów pyta o wszystkie reguły (prio 70 = przepływy kontrolera, 60 = hosty, 50 = trasy)
 - Float: `1 - R / 100` daje `0.30000000000000004` dla R = 70 i zafałszowuje porównanie
 z `0.3`; używać `(100 - R) / 100`
@@ -380,6 +461,22 @@ w seriach losowych to właśnie te przepływy
 akceptuje obie (`\((?:\w+, )?loads …\)`) — inaczej tabela ścieżek w raporcie jest pusta
 - Ping z `-Q 184` (DSCP 46) jest w C klasyfikowany jako wideo: w wariancie z rezerwą RTT wideo
 jest bliskie 0,03 ms, w pozostałych 58–118 ms (ICMP trafia w pełną kolejkę `tbf`, `latency 50ms`)
+- Meter w OVS: stawkę zmienia `OFPMC_MODIFY` na tym samym `meter_id` (reguły się nie zmieniają);
+stan: `ovs-ofctl -O OpenFlow13 dump-meters br0`, liczniki: `meter-stats`
+- Pingi wideo (ICMP, DSCP 46) w `pending` nie mogą liczyć się jak strumień danych (szacunek 0),
+inaczej drugi strumień wideo ucieka z rezerwy (spill) — patrz krok 10
+- Wariant `ecmp` w runnerze wymaga labu FRR stojącego razem z SDN. Po `deploy` OSPF potrzebuje
+1–2 minut; wcześniej runner przerywa z komunikatem „OSPF niegotowy: … (0/3 FULL)” — poczekać
+(sprawdzenie: `docker exec clab-clos-frr-leaf1 vtysh -c "show ip ospf neighbor"`) i puścić ponownie
+- Zatrzymywanie serii: `pkill -f run_scenario.py` pasuje do własnej powłoki (kod 144 i ubity
+terminal) — używać `ps -eo pid,cmd | grep [r]un_scenario` i `kill <PID>`; serie w tle uruchamiać
+przez `setsid nohup … &`, żeby przeżyły zamknięcie terminala
+- Niedokończone katalogi w `results/` (przerwana seria, brak `flows.csv`) zakłócają skrypt wykresów,
+bo bierze najnowszy katalog pasujący do wzorca — usuwać przed generowaniem
+- `controllers/__pycache__` należy do roota (kontener): `py_compile` na hoście kończy się
+`PermissionError`; składnię sprawdzać `python3 -c "import ast; ast.parse(open(…).read())"`
+- Odchylenie standardowe z powtórzeń zawiera różnice obciążenia między powtórzeniami (51–59
+strumieni tła); porównania sparowane (ten sam harmonogram) są dokładniejsze niż same średnie
 
 ## Ustalenia ze spotkania z promotorem (2026-10-21)
 - Sieć może być **statyczna** — topologia i rozmieszczenie hostów nie zmieniają się
@@ -398,35 +495,30 @@ obciążenia 50/70/90% — patrz „Następny krok”.
 - Decyzje projektowe algorytmu C (przeanalizowane zalety/wady, bez rozstrzygnięć):
   1. Klasyfikacja: **rozstrzygnięte** — samo DSCP 46 (EF), bez granicy zaufania na portach
   hostów (zaufane hosty w laboratorium)
-  2. Kolejki priorytetowe: **rozstrzygnięte** — macierz 2×2 {LLLB, qos100} × {bez kolejek
-  (`tbf`), z kolejkami (`htb` + filtr DSCP)}; kolejki robione w `tc` na portach fabric, nie
-  w OpenFlow (kontroler bez zmian); `rate` klasy wideo w `htb` może odzwierciedlać R
-  3. Rezerwa ścieżki wideo: **zaimplementowana** jako miękka z limitem R i zaworem dla
-  wideo; pomiar pokazał, że działa tylko R = 100% (patrz „Nie działa”)
+  2. Kolejki priorytetowe: **zastąpione** meterami OpenFlow (warstwy L1–L3, 2026-11-01);
+  macierz 2×2 z `htb` nie wykonana
+  3. Rezerwa ścieżki wideo: **zaimplementowana** jako drzewo wideo z limitem tła egzekwowanym
+  meterem (L1), bramką „mieści się” (L2) i limitem dynamicznym (L3); wyniki w „Wyniki pomiarów”
   4. Przenoszenie istniejących przepływów (rerouting): **rozstrzygnięte** — decyzja tylko
   przy starcie przepływu (spójne z B)
 - Awarie łączy/węzłów — **poza zakresem pracy** (decyzja autora, zapisana w AGENTS.md);
 PortStatus / fast-failover nie są implementowane
 
 ## Następny krok
-- Commit i `git push` (kontroler z wariantem C, topologie `clos-*`/`mesh-*`, `configs/frr/clos`
-i `mesh`, wyniki bez `raw/`, dokumentacja); przed wyłączeniem VM zawsze `git push`
-- **Macierz 2×2 z kolejkami:** skrypt `shape.sh <iface> <rate> <tbf|prio>` (w trybie `prio`:
-`htb` z klasami wideo/reszta, filtr `u32 match ip dsfield 0xb8 0xfc`, kolejki `bfifo limit
-62500` ≈ 50 ms przy 10 Mb/s), zmienna `QDISC` w topologiach (env kontrolera `${QDISC:=tbf}`
-+ wywołanie skryptu w `exec` portów fabric), scenariusz z wariantami lllb / qos100 /
-lllb+kolejki / qos100+kolejki (+ `ecmp` jako odniesienie); najpierw sprawdzić w labie, że
-obrazy mają `tc htb`
+- Porządki w repozytorium: usunąć unieważnione i puste wyniki (`results/meter-sweep-*`,
+`layers-clos/*` poza powtórzeniami, puste katalogi), zacommitować wyniki `clos-full`,
+`clos-layers` i mesh sprzed meterów; przed wyłączeniem VM zawsze `git push`
+- Mesh z końcowym kontrolerem: L1–L3 i `mesh-frr` (ECMP), ta sama procedura co dla Clos
+- Opcjonalnie: macierz 2×2 z kolejkami (`shape.sh <iface> <rate> <tbf|prio>`, `htb` z klasami
+wideo/reszta, filtr `u32 match ip dsfield 0xb8 0xfc`, zmienna `QDISC` w topologiach) jako
+porównanie z meterami
 - Sterowane poziomy obciążenia tła 50/70/90% (parametr docelowego obciążenia w generatorze
 albo dobór `arrival_rate`); jedna seria na poziom
-- Pomiary na mesh: deploy `mesh-sdn` / `mesh-frr`, sprawdzenie OSPF Full, scenariusz
-`topology: mesh` (domyślne pliki w `common.py`)
 - Więcej powtórzeń (15–20) dla końcowych wyników i opis ograniczeń (n, przeciążenie, brak testu
 istotności)
 - Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, literówki w komentarzach
 („zapytaniam”, „obciązenia”, „miedzy”, „ściezki”), docstring `_install_host_rule`
-(„w danym leafie”), spacje na końcu linii; stała `LINK_BPS` zamiast trzech `10_000_000`;
-domyślny `TOPO_FILE` w kontrolerze
+(„w danym leafie”), spacje na końcu linii
 - Przypiąć `kathara/sdn` do digestu
 (`sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5`)
 - Fix TSO/GRO, jeśli tło ma obejmować TCP (obecnie wszystkie pomiary UDP)
