@@ -4,8 +4,9 @@ Użycie (z katalogu głównego repozytorium):
     .venv/bin/python analysis/summary_charts.py [katalog_wyjściowy]     # domyślnie results/summary
 
 Źródła to katalogi wyników z `flows.csv`, `timeseries.csv`, `report.md` (po `analyze.py`).
-Dla każdej topologii podano listę (katalog, {wariant w danych: wariant na wykresie}); brakujące
-warianty są pomijane. Katalogi z `*` oznaczają "najnowszy pasujący".
+Dla każdej topologii podano listę (wzorzec katalogu, {wariant w danych: wariant na wykresie}); brakujące
+warianty są pomijane. Wzorzec z `*` obejmuje wszystkie pasujące katalogi z flows.csv (np. obie części
+serii SDN); wariant nie może występować w dwóch katalogach.
 
 Rodziny wariantów wariantu C (QoS-Aware):
     L1 (m90..m30)      meter OpenFlow o stałej stawce (100 - R)% łącza + stara bramka wejścia
@@ -25,7 +26,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else "results/summary"
+OUT = sys.argv[1] if len(sys.argv) > 1 else "results/official/wykresy-clos"
 
 L1 = ["m90", "m70", "m50", "m30"]
 L2 = ["L2r90", "L2r70", "L2r50", "L2r30"]
@@ -36,14 +37,18 @@ R_OF = {"qos100": 100, "m90": 90, "m70": 70, "m50": 50, "m30": 30,
         "L2r90": 90, "L2r70": 70, "L2r50": 50, "L2r30": 30}
 H_OF = {"L3H0": 0.0, "L3H1.5": 1.5, "L3H3": 3.0}
 
+# Wyniki oficjalne (20 powtórzeń, seed 42). Wzorzec z `*` obejmuje WSZYSTKIE pasujące katalogi
+# (clos-sdn ma dwie części: kluczowe warianty i punkty krzywych); katalogi bez flows.csv są pomijane.
+# Wariant `qos100_ref` (kotwica do kontroli dryfu między częściami) nie jest rysowany.
 SOURCES = {
     "Clos": [
-        ("results/clos-full/*", {v: v for v in BASE + L1}),
-        ("results/clos-layers/*", {v: v for v in L2 + L3}),
+        ("results/official/clos-frr/*", {"ecmp": "ecmp"}),
+        ("results/official/clos-sdn/*", {v: v for v in BASE + L1 + L2 + L3 if v != "ecmp"}),
     ],
 }
-# Ta sama rezerwa bez metera (sama bramka wejścia, pomiar z 1.11) - do porównania "z meterem / bez"
-NO_METER = ("Clos", "results/reserve-sweep/20261101_180238", {"qos90": "m90", "qos70": "m70", "qos50": "m50"})
+# Porównanie "z meterem / bez" wyłączone: dane bez metera to 5 powtórzeń sprzed poprawek, więc nie są
+# porównywalne z oficjalnymi 20 powtórzeniami. Ustaw krotkę (topologia, katalog, {wariant: wariant}), by włączyć.
+NO_METER = None
 # Warianty na wykresie przebiegów czasowych (przy 14 liniach wykres byłby nieczytelny)
 LINE_VARIANTS = ["ecmp", "lllb", "qos100", "m70", "L2r70", "L3H1.5"]
 
@@ -101,6 +106,11 @@ plt.rcParams.update({
 def resolve(path):
     hits = sorted(glob.glob(path))
     return hits[-1] if hits else None
+
+
+def expand(path):
+    """Wszystkie katalogi pasujące do wzorca, które mają wyniki po analyze.py (flows.csv)."""
+    return [d for d in sorted(glob.glob(path)) if os.path.exists(os.path.join(d, "flows.csv"))]
 
 
 def num(x):
@@ -165,12 +175,17 @@ def load_topology(topo):
     data = {}
     used = []
     for path, wanted in SOURCES[topo]:
-        d = resolve(path)
-        if not d or not os.path.exists(os.path.join(d, "flows.csv")):
+        dirs = expand(path)
+        if not dirs:
             print("  pominięto (brak danych):", path)
             continue
-        used.append(d)
-        data.update(load(d, wanted))
+        for d in dirs:
+            part = load(d, wanted)
+            for v in part:
+                if v in data:
+                    raise SystemExit("wariant %s występuje w kilku katalogach (%s) - połączenie niejednoznaczne" % (v, d))
+            data.update(part)
+            used.append(d)
     return data, used
 
 
@@ -334,7 +349,7 @@ def tradeoff_figure(topo, data):
         elif v in H_OF:        # etykiety L3 na różnych wysokościach, żeby nie nachodziły
             txt, off = "H=%g" % H_OF[v], [(-10, 22), (0, 40), (12, 58)][L3.index(v)]
         elif v in L2:
-            txt, off = "L2 R=%d" % R_OF[v], {90: (30, -34), 70: (-34, -34), 50: (12, -26), 30: (-44, -22)}[R_OF[v]]
+            txt, off = "L2 R=%d" % R_OF[v], {90: (30, -34), 70: (-34, -34), 50: (-62, -8), 30: (-44, -22)}[R_OF[v]]
         else:
             txt, off = "R=%d" % R_OF[v], (8, 22)
         ax.annotate(txt, (mx, my), textcoords="offset points", xytext=off, fontsize=8.5, color=INK2,
@@ -545,11 +560,11 @@ def main():
         outputs += bars_figure(topo, data, n)
         outputs += curves_figure(topo, data)
         outputs += tradeoff_figure(topo, data)
-        dirs = [(resolve(path), wanted) for path, wanted in SOURCES[topo]
-                if resolve(path) and os.path.exists(os.path.join(resolve(path), "timeseries.csv"))]
+        dirs = [(d, wanted) for path, wanted in SOURCES[topo] for d in expand(path)
+                if os.path.exists(os.path.join(d, "timeseries.csv"))]
         outputs += lines_figure(topo, dirs)
         outputs += export_csv(topo, data, dirs)
-        if topo == "Clos":
+        if topo == "Clos" and NO_METER:
             outputs += meter_figure(data)
     print("Zapisano:")
     for p in outputs:

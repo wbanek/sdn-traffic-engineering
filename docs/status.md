@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-11-02)
+# Status projektu (ostatnia aktualizacja: 2026-11-05)
 
 ## Pliki topologii (od 2026-11-01)
 | Plik | Co | Lab (`name:`) |
@@ -218,9 +218,21 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   - uruchamianie bez sudo (użytkownik w grupie `clab_admins` i `docker`); matplotlib tylko
   w `.venv` (analizę puszczać `.venv/bin/python`)
   - `analysis/summary_charts.py` (w repozytorium): wykresy zbiorcze (każdy osobnym PNG) i CSV z
-  danymi w `results/summary/` z serii `clos-full` i `clos-layers` (`.venv/bin/python
-  analysis/summary_charts.py`); metody: słupkowe, krzywe R i H, kompromis wideo/tło, przebiegi
-  czasowe, z meterem i bez. Źródło „najnowszy katalog” — usuwać puste/przerwane katalogi
+  danymi w `results/official/wykresy-clos/` z wyników oficjalnych (`.venv/bin/python
+  analysis/summary_charts.py [katalog]`); metody: słupkowe, krzywe R i H, kompromis wideo/tło,
+  przebiegi czasowe. Wzorzec `results/official/clos-sdn/*` obejmuje wszystkie części serii
+  (katalogi bez `flows.csv` są pomijane; wariant w dwóch katalogach = błąd); porównanie „z meterem
+  / bez” wyłączone (`NO_METER = None`: dane bez metera to 5 powtórzeń sprzed poprawek)
+  - `analysis/export_excel.py` (w repozytorium): `.venv/bin/python analysis/export_excel.py <katalog>
+  [<katalog> …] -o plik.xlsx` — jeden plik .xlsx z arkuszami: opis, podsumowanie (n, średnia, sd,
+  CI95 z rozkładu t, mediana, min, maks), sparowane (różnice wariant − ecmp/lllb/qos100 w
+  parach), powtorzenia, strumienie, przebiegi_usrednione, timeseries_surowe, lacza, harmonogram;
+  liczby jako liczby (polski Excel). Wymaga `openpyxl` w `.venv`
+  - **Wyniki oficjalne** w `results/official/<topologia>/<znacznik czasu>/` (`clos-frr`,
+  `clos-sdn`; w przyszłości `mesh-frr`, `mesh-sdn`): 20 powtórzeń, seed 42, każdy katalog ma
+  `PROVENANCE.txt` (czas, hash kodu `controllers/*.py` + topologii, wersje i digesty obrazów, CPU),
+  `report.md`, CSV, wykresy i `dane_excel.xlsx` (surowe `raw/` poza gitem: `results/**/raw/` w
+  `.gitignore`). Zbiorczy plik do Excela: `results/official/dane_clos_wszystko.xlsx`
 - **Wyniki pomiarów** (Clos, UDP `-l 1400`, wideo 3 Mb/s DSCP 46; pełne raporty w `results/`):
   - `lllb-vs-rr-basic` (5 pow., scenariusz deterministyczny): wideo LLLB 3,04 ± 2,10% strat,
   RR 0,00%; tło LLLB 0,07 / 0,03 / 0,01 / 3,53%, RR 30,5 / 44,2 / 6,3 / 44,6%; odrzuceń
@@ -248,7 +260,39 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   - `mesh-lllb-vs-qos` 20261101_223056 (mesh, lllb i qos100, 5 pow., bez meterów): wideo lllb
   9,56%, qos100 0,00%; tło lllb 6,55%, qos100 24,4% (koszt rezerwy w mesh większy niż w Clos);
   20261101_220240 (starszy kształt drzewa) — podobnie
-  - **Wyniki końcowe na Clos z meterami** (kontroler po poprawkach z kroku 10; 5 pow., ten sam
+  - **WYNIKI OFICJALNE, Clos, 20 powtórzeń (2026-11-04/05)**, seed 42, identyczne harmonogramy tła
+  we wszystkich wariantach (sprawdzone: `schedule.json` == `clos-frr` w 20/20 powtórzeń obu
+  części SDN), ABBA, kontroler odtwarzany per przebieg, ten sam hash kodu przez cały czas
+  (`177f924a…`), 0 `Traceback` w `controller.log` (300 przebiegów). Katalogi:
+  `results/official/clos-frr/20261104_222207` (ecmp),
+  `results/official/clos-sdn/20261104_235910` (część 1: lllb, qos100, m70, L2r70, L3H1.5),
+  `results/official/clos-sdn/20261105_023134` (część 2: m90, m50, m30, L2r90, L2r50, L2r30, L3H0,
+  L3H3 + kotwica `qos100_ref`). Kotwica vs `qos100` (para po powtórzeniach): wideo −0,01 ± 0,02 pp,
+  tło +0,28 ± 1,45 pp — brak dryfu między częściami. Średnia ± sd z powtórzeń:
+
+    | wariant | wideo: utrata | powt. z utratą > 1% | tło: utrata | jitter wideo [ms] | RTT p95 wideo, mediana [ms] |
+    |---|---|---|---|---|---|
+    | ecmp (A) | 13,8 ± 9,6% | 18/20 | 12,1 ± 6,2% | 0,41 | 59 |
+    | lllb (B) | 4,9 ± 4,6% | 16/20 | 4,9 ± 3,1% | 0,24 | 70 |
+    | qos100 | 0,00% | 0/20 | 12,9 ± 6,1% | 0,08 | 0,05 |
+    | L1 m90 / m70 / m50 / m30 | 0 / 0 / 1,8 / 3,6% | 0 / 0 / 9 / 12 | 20,4 / 14,5 / 11,2 / 7,4% | 0,07 / 0,07 / 0,21 / 0,26 | 0,06 / 0,05 / 58 / 59 |
+    | L2 r90 / r70 / r50 / r30 | 0 / 0,02 / 2,4 / 3,5% | 0 / 0 / 13 / 13 | 14,4 / 13,0 / 9,6 / 7,7% | 0,07 / 0,08 / 0,26 / 0,26 | 0,06 / 0,05 / 59 / 59 |
+    | L3 H=0 / 1,5 / 3 Mb/s | 0,07 / 0,01 / 0,00% | 0 / 0 / 0 | 6,7 / 8,7 / 10,2% | 0,11 / 0,07 / 0,07 | 9,6 / 0,05 / 0,05 |
+
+  - **wnioski oficjalne** (różnice sparowane na tych samych harmonogramach, ± połowa CI95 w pkt
+  proc.): (1) ecmp − lllb: wideo +8,9 ± 4,8, tło +7,2 ± 2,3 — ecmp gorszy w obu metrykach;
+  (2) lllb − L3H1.5: wideo +4,9 ± 2,2, tło −3,8 ± 1,2 — rezerwa usuwa utratę wideo za cenę
+  3,8 pp tła; (3) rezerwa działa dla R ≥ 70 (wideo 0 w 20/20), dla R ≤ 50 wideo traci 1,8–3,6% i
+  RTT p95 mediana ≈ 59 ms (wideo trafia na przeciążoną ścieżkę); (4) m70 − qos100: tło +1,7 ± 1,8
+  (bez różnicy), L2r70 − m70: −1,5 ± 1,7 (bez różnicy), L2r50 − m50: −1,6 ± 1,5, L2r30 − m30:
+  +0,3 ± 1,3 — L2 daje istotny zysk tylko dla R = 90 (L2r90 − m90: −5,9 ± 2,8); m90 − qos100:
+  +7,5 ± 3,0 (wyższe R w L1 pogarsza tło); (5) L3 jest najlepszą rodziną: L3H1.5 − m70 tło −5,9 ± 1,7
+  przy tym samym wideo, L3H1.5 − L2r70 −4,4 ± 1,4, L3H1.5 − qos100 −4,2 ± 1,6; H = 0 ma najmniej
+  strat tła (6,7%), ale wideo traci śladowo (max 0,4%) i RTT p95 mediana 9,6 ms (L3H0 − L3H1.5:
+  −1,9 ± 1,2); H = 3 ≈ pełna rezerwa (L3H3 − L3H1.5: +1,5 ± 1,3). Ostrzeżenia: 16 przepływów tła
+  bez raportu serwera iperf3 (`Bad file descriptor`), pominięte w statystykach; utrata wideo
+  ma rozkład skośny (lllb: średnia 4,9, mediana 3,4) — podawać medianę i odsetek powtórzeń > 1%
+  - **Wyniki wstępne na Clos z meterami** (5 pow.; zastąpione przez oficjalne 20 pow. powyżej; kontroler po poprawkach z kroku 10; ten sam
   seed i harmonogramy tła we wszystkich seriach, więc porównania są sparowane;
   `results/clos-full/20261102_053107`, `results/clos-layers/20261102_062444`; wykresy i CSV
   w `results/summary/`):
@@ -301,9 +345,10 @@ przyjętych (tło dławione meterem zamiast przekierowane), dobór H pod scenari
 > 90% w powtórzeniu). Brak parametru „docelowe obciążenie” w runnerze
 - Mesh: zmierzone tylko lllb i qos100 (bez meterów); L1–L3 na mesh i `mesh-frr` (ECMP) nie
 były mierzone, brak sprawdzenia, że OSPF w `configs/frr/mesh/` zestawia sąsiadów Full
-- Pomiary głównie na Clos; n = 5 powtórzeń, jeden poziom obciążenia, bez testów istotności —
-do pracy potrzeba więcej powtórzeń (15–20); różnice kilku punktów procentowych mieszczą się
-w odchyleniu
+- Wyniki oficjalne (20 powtórzeń, CI95 i różnice sparowane) są tylko dla Clos, jeden poziom
+obciążenia tła (`arrival_rate` 1,0) i jeden profil wideo (2 × 3 Mb/s); mesh bez wyników oficjalnych.
+Skalowanie 10 Mb/s ≙ 10 Gb/s (3 Mb/s ≙ ~3 Gb/s ≈ nieskompresowane 1080p60) to hipoteza do
+sprawdzenia w źródłach; opóźnienia bezwzględne w ms nie skalują się (`tbf latency 50ms`)
 - **Ograniczenie LLLB (cecha algorytmu, nie błąd):** przy Packet-In rozmiar przepływu jest
 nieznany, rezerwacja jest jednakowa (0,5 Mb/s) dla wideo i kanału sterującego, a decyzja
 zapada raz. Przy jednoczesnym starcie LLLB równoważy **liczbę** przepływów, nie pasmo —
@@ -381,8 +426,10 @@ błędów przerywa albo uruchomienie kontrolera, albo dry-run
 - `containerlab` działa bez `sudo` dla użytkownika z grupy `clab_admins`; `sudo -n true` nie
 jest dobrym testem (reguła NOPASSWD nie istnieje), a bilet `sudo -v` z jednego terminala nie
 działa w drugim (osobne TTY)
-- Dwa laby naraz (SDN + FRR) podnoszą średnie CPU maszyny do ok. 50% (maks. 96%) i zniekształcają
-jitter; w seriach bez wariantu `ecmp` zatrzymać lab FRR
+- Dwa laby naraz (SDN + FRR) podnoszą średnie CPU maszyny: ecmp 15% (sam lab FRR) vs 23% (oba
+laby), SDN 26–33% niezależnie od drugiego labu; szczyty 92–98% w każdym przebiegu (wcześniejsze
+„ok. 50%” nie wynika z danych). W seriach bez wariantu `ecmp` zatrzymać lab FRR; w trakcie serii
+nie uruchamiać ciężkich zadań
 - Podczas serii SDN lab FRR może stać (kontenery bez ruchu); po restarcie maszyny oba są martwe
 - OVS ma `n_buffers:0`, a table-miss używa `OFPCML_NO_BUFFER` → `buffer_id` w FlowMod
 jest zbędny (zawsze `OFP_NO_BUFFER`); pierwszy pakiet trzeba odesłać Packet-Out
@@ -471,8 +518,9 @@ inaczej drugi strumień wideo ucieka z rezerwy (spill) — patrz krok 10
 - Zatrzymywanie serii: `pkill -f run_scenario.py` pasuje do własnej powłoki (kod 144 i ubity
 terminal) — używać `ps -eo pid,cmd | grep [r]un_scenario` i `kill <PID>`; serie w tle uruchamiać
 przez `setsid nohup … &`, żeby przeżyły zamknięcie terminala
-- Niedokończone katalogi w `results/` (przerwana seria, brak `flows.csv`) zakłócają skrypt wykresów,
-bo bierze najnowszy katalog pasujący do wzorca — usuwać przed generowaniem
+- Niedokończone katalogi w `results/` (przerwana seria, brak `flows.csv`) są pomijane przez
+`summary_charts.py`, ale wariant występujący w dwóch katalogach pasujących do wzorca przerywa
+skrypt błędem — przy powtórkach usuwać stary katalog
 - `controllers/__pycache__` należy do roota (kontener): `py_compile` na hoście kończy się
 `PermissionError`; składnię sprawdzać `python3 -c "import ast; ast.parse(open(…).read())"`
 - Odchylenie standardowe z powtórzeń zawiera różnice obciążenia między powtórzeniami (51–59
@@ -505,17 +553,25 @@ obciążenia 50/70/90% — patrz „Następny krok”.
 PortStatus / fast-failover nie są implementowane
 
 ## Następny krok
-- Porządki w repozytorium: usunąć unieważnione i puste wyniki (`results/meter-sweep-*`,
-`layers-clos/*` poza powtórzeniami, puste katalogi), zacommitować wyniki `clos-full`,
-`clos-layers` i mesh sprzed meterów; przed wyłączeniem VM zawsze `git push`
-- Mesh z końcowym kontrolerem: L1–L3 i `mesh-frr` (ECMP), ta sama procedura co dla Clos
+- Zacommitować: `results/official/`, `analysis/export_excel.py`, `analysis/summary_charts.py`,
+`.gitignore`, `docs/status.md`, `README.md`; przed wyłączeniem VM zawsze `git push`
+- Porządki: usunąć unieważnione i wstępne wyniki (`results/meter-sweep-*`, `layers-clos*`,
+`clos-full`, `clos-layers`, `results/summary`, puste katalogi) po zatwierdzeniu wyników oficjalnych
+- **Mesh oficjalnie** (20 powtórzeń, seed 42, ta sama procedura jak dla Clos): najpierw wdrożyć
+  `mesh-frr` i sprawdzić OSPF (sąsiedzi Full, ECMP), potem ecmp, a następnie warianty SDN w dwóch
+  częściach (kluczowe, potem punkty krzywych + kotwica); wyniki do `results/official/mesh-frr` i
+  `mesh-sdn`; kod kontrolera zamrozić na czas obu części
+- Czułość na tempo wideo (np. 1,5 / 3 / 4,5 Mb/s; `VIDEO_EST_BPS` obecnie stałe 3 Mb/s —
+  uczynić zmienną env lub adaptacyjną) i poziomy obciążenia tła (patrz niżej)
+- Zbadać powtórzenia z długim RTT w L3H1.5 (średnia 2,8 ms, mediana 0,05 ms)
 - Opcjonalnie: macierz 2×2 z kolejkami (`shape.sh <iface> <rate> <tbf|prio>`, `htb` z klasami
 wideo/reszta, filtr `u32 match ip dsfield 0xb8 0xfc`, zmienna `QDISC` w topologiach) jako
 porównanie z meterami
 - Sterowane poziomy obciążenia tła 50/70/90% (parametr docelowego obciążenia w generatorze
 albo dobór `arrival_rate`); jedna seria na poziom
-- Więcej powtórzeń (15–20) dla końcowych wyników i opis ograniczeń (n, przeciążenie, brak testu
-istotności)
+- Opis ograniczeń w pracy: jeden poziom obciążenia, jeden profil wideo, ecmp zależny od portów
+źródłowych iperf3 (hash L4, wynik nie jest powtarzalny per harmonogram), wiele porównań naraz
+bez poprawki
 - Drobne porządki w kodzie: sprawdzenie `pkt_arp is None`, literówki w komentarzach
 („zapytaniam”, „obciązenia”, „miedzy”, „ściezki”), docstring `_install_host_rule`
 („w danym leafie”), spacje na końcu linii

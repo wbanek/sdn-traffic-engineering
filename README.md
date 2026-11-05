@@ -19,7 +19,7 @@ Mierzone parametry: jitter, packet loss, latency, throughput. Poziomy obciążen
 ## Topologie
 
 - **Clos:** 3 spine × 4 leaf, 3 hosty na leaf (video, bg1, bg2)
-- **Mesh:** 4 edge + 3 core, 3 hosty na edge; krawędzie łączą się też ze sobą, a rdzenie między sobą (dotąd tylko przygotowana, nie mierzona)
+- **Mesh:** 4 edge + 3 core, 3 hosty na edge; krawędzie łączą się też ze sobą, a rdzenie między sobą (wstępne pomiary lllb i qos100; wyniki oficjalne jeszcze nie wykonane)
 - Łącza przełączników: 10 Mb/s, host–przełącznik: 100 Mb/s (`tc tbf`, po obu końcach łącza)
 - Kontroler SDN jest niezależny od topologii (model sieci czyta z pliku Containerlab)
 
@@ -33,19 +33,21 @@ Mierzone parametry: jitter, packet loss, latency, throughput. Poziomy obciążen
 | `controllers/controller_ryu.py` | aplikacja Ryu `Fabric`; polityka wyboru ścieżki przez `POLICY` (`rr`, `lllb`, `qos`) i `RESERVE_PCT` |
 | `controllers/topo.py` | model sieci wczytywany z pliku Containerlab |
 | `images/ryu/Dockerfile` | obraz kontrolera `sdn-ryu:4.34` |
-| `results/` | wyniki pomiarów: raporty, CSV, wykresy (bez surowych danych `raw/`) |
+| `results/` | wyniki pomiarów: raporty, CSV, wykresy (bez surowych danych `raw/`); wyniki oficjalne w `results/official/<topologia>/` |
+| `analysis/` | `summary_charts.py` (wykresy zbiorcze), `export_excel.py` (dane do Excela) |
 
 ## Wyniki (skrót)
 
-Seria `results/reserve-sweep/20261101_180238` (Clos, dwa strumienie wideo 3 Mb/s DSCP 46 + losowe tło, 5 powtórzeń, silne przeciążenie):
+Wyniki oficjalne, Clos (`results/official/`, dwa strumienie wideo 3 Mb/s DSCP 46 + losowe tło, 20 powtórzeń, seed 42, średnia ± sd):
 
 | wariant | utrata wideo | utrata tła |
 |---|---|---|
-| LLLB (B) | 7,93 ± 6,42% | 4,45 ± 3,23% |
-| QoS-Aware, pełna rezerwa (C, R = 100%) | **0,00 ± 0,00%** | 12,52 ± 5,91% |
-| QoS-Aware, miękka rezerwa (R = 90 / 70 / 50%) | 5,5–5,8% | 5,6–7,0% |
+| OSPF + ECMP (A) | 13,8 ± 9,6% | 12,1 ± 6,2% |
+| LLLB (B) | 4,9 ± 4,6% | **4,9 ± 3,1%** |
+| QoS-Aware, pełna rezerwa (C, R = 100%) | **0,00%** | 12,9 ± 6,1% |
+| QoS-Aware, L3 z zapasem H = 1,5 Mb/s (C) | 0,01 ± 0,04% | 8,7 ± 4,4% |
 
-Pełna rezerwa ścieżki chroni wideo całkowicie kosztem ruchu tła; miękka rezerwa w obecnej konstrukcji tego nie robi. Szczegóły, ograniczenia i pozostałe serie: [docs/status.md](docs/status.md).
+Rezerwa ścieżki eliminuje utratę wideo; adaptacyjny limit tła (L3) zmniejsza jej koszt dla ruchu tła o ok. 4 pkt proc. względem pełnej rezerwy. Stały limit (L1/L2) chroni wideo tylko dla R ≥ 70%. Szczegóły, ograniczenia i różnice sparowane: [docs/status.md](docs/status.md).
 
 ## Dokumentacja
 
