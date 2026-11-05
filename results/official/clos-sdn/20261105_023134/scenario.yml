@@ -1,0 +1,34 @@
+# OFICJALNA seria, część 2: punkty krzywych (R=90/50/30 w L1 i L2, H=0/3 w L3) + kotwica qos100_ref; wyniki w results/official/clos-sdn/.
+# Seed 42 i generator identyczne jak w clos-frr (ecmp), 20 powtórzeń -> te same harmonogramy ruchu.
+# Dwa strumienie wideo (3 Mb/s, DSCP 46) zbiegają się na leaf4 (ok. 60% łącza rezerwowego spine1->leaf4),
+# a na to nakłada się losowe tło best-effort (jak w random-ecmp-lllb-rr). Inny harmonogram tła w każdym
+# powtórzeniu (seed + nr), wspólny dla wszystkich wariantów w danym powtórzeniu.
+name: clos-sdn
+topology: clos
+variants:
+  - {name: m90,    policy: qos, reserve_pct: 90,  env: {LAYERS: 1}}
+  - {name: m50,    policy: qos, reserve_pct: 50,  env: {LAYERS: 1}}
+  - {name: m30,    policy: qos, reserve_pct: 30,  env: {LAYERS: 1}}
+  - {name: L2r90,  policy: qos, reserve_pct: 90,  env: {LAYERS: 2}}
+  - {name: L2r50,  policy: qos, reserve_pct: 50,  env: {LAYERS: 2}}
+  - {name: L2r30,  policy: qos, reserve_pct: 30,  env: {LAYERS: 2}}
+  - {name: L3H0,   policy: qos, reserve_pct: 70,  env: {LAYERS: 3, HEADROOM_MBPS: 0}}
+  - {name: L3H3,   policy: qos, reserve_pct: 70,  env: {LAYERS: 3, HEADROOM_MBPS: 3}}
+  - {name: qos100_ref, policy: qos, reserve_pct: 100, env: {LAYERS: 1}}
+duration: 60
+warmup: 5
+repetitions: 20
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

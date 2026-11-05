@@ -1,0 +1,19 @@
+Seria: clos-sdn, część 2, 20 powtórzeń, seed 42
+Start: 2026-11-05T02:31:34+01:00
+Koniec: 2026-11-05T07:05:56+01:00
+git HEAD: 6bf42bb740c683c5d5a9f463c9a2919d65174075
+git status (zmiany niezacommitowane):
+ M .gitignore
+?? analysis/export_excel.py
+?? results/official/
+hash kodu (controllers/*.py + topologie) na starcie serii: 177f924a308f289703e765b9baf109f994331a2733fa751603e7fcf4ece120c0
+hash kodu na końcu części: 177f924a308f289703e765b9baf109f994331a2733fa751603e7fcf4ece120c0 (bez zmian)
+containerlab:     version: 0.79.0
+kernel: 7.0.0-38-generic  rdzenie: 4  pamięć: 7398 MB
+scenariusz sha256: d3af3a72d3a9d550feda23afa99eee6ff293ecb02decc5f998fed47ea564c610
+obrazy:
+sdn-ryu:4.34 sha256:4aeb89e214b2c076635b4fd0558f0157154775d6c9dee12994df870388ad0ce3
+kathara/sdn:latest sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5
+wbitt/network-multitool:latest sha256:db2810fe2c8d36db074eab5d98fbf861c8ed55e0786d648d3477b3de9135632e
+quay.io/frrouting/frr:9.0.1 sha256:ae8f7fb75055845f194984b6defb731eef5579420c227c772b38ea340026cd9c
+osrg/ryu:latest sha256:863c63d95a53f45ebdc7b6f111af0032af275e427e0d8d26355f6fc8e57747c8
