@@ -14,12 +14,12 @@ Sprawdzenie, jak trzy podejścia do rozkładania ruchu zachowują się w sieci S
 | **B** | SDN + LLLB, czyli Least Loaded Link Balancing (Ryu + Open vSwitch) |
 | **C** | SDN + autorski algorytm QoS-Aware z rezerwą pasma dla wideo (Ryu + Open vSwitch) |
 
-Mierzone parametry: jitter, packet loss, latency, throughput. Poziomy obciążenia tła: 50%, 70%, 90%.
+Mierzone parametry: jitter, packet loss, latency, throughput. Poziomy obciążenia tła: intensywność losowych przepływów tła (`arrival_rate` 0,4 / 0,7 / 1,0).
 
 ## Topologie
 
 - **Clos:** 3 spine × 4 leaf, 3 hosty na leaf (video, bg1, bg2)
-- **Mesh:** 4 edge + 3 core, 3 hosty na edge; krawędzie łączą się też ze sobą, a rdzenie między sobą (wstępne pomiary lllb i qos100; wyniki oficjalne jeszcze nie wykonane)
+- **Mesh:** 4 edge + 3 core, 3 hosty na edge; krawędzie łączą się też ze sobą, a rdzenie między sobą (wyniki oficjalne: 20 powtórzeń, jak dla Clos)
 - Łącza przełączników: 10 Mb/s, host–przełącznik: 100 Mb/s (`tc tbf`, po obu końcach łącza)
 - Kontroler SDN jest niezależny od topologii (model sieci czyta z pliku Containerlab)
 
@@ -47,7 +47,16 @@ Wyniki oficjalne, Clos (`results/official/`, dwa strumienie wideo 3 Mb/s DSCP 46
 | QoS-Aware, pełna rezerwa (C, R = 100%) | **0,00%** | 12,9 ± 6,1% |
 | QoS-Aware, L3 z zapasem H = 1,5 Mb/s (C) | 0,01 ± 0,04% | 8,7 ± 4,4% |
 
-Rezerwa ścieżki eliminuje utratę wideo; adaptacyjny limit tła (L3) zmniejsza jej koszt dla ruchu tła o ok. 4 pkt proc. względem pełnej rezerwy. Stały limit (L1/L2) chroni wideo tylko dla R ≥ 70%. Szczegóły, ograniczenia i różnice sparowane: [docs/status.md](docs/status.md).
+Mesh (te same harmonogramy, 20 powtórzeń):
+
+| wariant | utrata wideo | utrata tła |
+|---|---|---|
+| OSPF + ECMP (A) | 10,9 ± 8,0% | 10,4 ± 5,5% |
+| LLLB (B) | 10,2 ± 6,2% | **8,5 ± 4,4%** |
+| QoS-Aware, pełna rezerwa (C, R = 100%) | 0,05 ± 0,24% | 26,0 ± 7,5% |
+| QoS-Aware, L3 z zapasem H = 1,5 Mb/s (C) | **0,01 ± 0,02%** | 12,5 ± 5,1% |
+
+Rezerwa ścieżki eliminuje utratę wideo; adaptacyjny limit tła (L3) zmniejsza jej koszt dla ruchu tła (na Clos o ok. 4 pkt proc., na mesh o ok. 13 pkt proc. względem pełnej rezerwy). Stały limit (L1/L2) chroni wideo tylko dla R ≥ 70%. Na mesh LLLB nie poprawia wideo względem ECMP. Szczegóły, ograniczenia i różnice sparowane: [docs/status.md](docs/status.md).
 
 ## Dokumentacja
 

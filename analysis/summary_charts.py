@@ -1,7 +1,7 @@
 """Zbiorcze wykresy z wyników pomiarów na Clos - jeden zestaw na koniec serii.
 
 Użycie (z katalogu głównego repozytorium):
-    .venv/bin/python analysis/summary_charts.py [katalog_wyjściowy]     # domyślnie results/summary
+    .venv/bin/python analysis/summary_charts.py [katalog_bazowy]     # domyślnie results/official
 
 Źródła to katalogi wyników z `flows.csv`, `timeseries.csv`, `report.md` (po `analyze.py`).
 Dla każdej topologii podano listę (wzorzec katalogu, {wariant w danych: wariant na wykresie}); brakujące
@@ -26,7 +26,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else "results/official/wykresy-clos"
+OUT_BASE = sys.argv[1] if len(sys.argv) > 1 else "results/official"   # wykresy-<topologia>/ powstają w tym katalogu
+OUT = OUT_BASE
 
 L1 = ["m90", "m70", "m50", "m30"]
 L2 = ["L2r90", "L2r70", "L2r50", "L2r30"]
@@ -44,6 +45,10 @@ SOURCES = {
     "Clos": [
         ("results/official/clos-frr/*", {"ecmp": "ecmp"}),
         ("results/official/clos-sdn/*", {v: v for v in BASE + L1 + L2 + L3 if v != "ecmp"}),
+    ],
+    "Mesh": [
+        ("results/official/mesh-frr/*", {"ecmp": "ecmp"}),
+        ("results/official/mesh-sdn/*", {v: v for v in BASE + L1 + L2 + L3 if v != "ecmp"}),
     ],
 }
 # Porównanie "z meterem / bez" wyłączone: dane bez metera to 5 powtórzeń sprzed poprawek, więc nie są
@@ -548,14 +553,59 @@ def export_csv(topo, data, dirs):
     return paths
 
 
+# ---------------------------------------------------------------- porównanie topologii
+COMPARE = ["ecmp", "lllb", "qos100", "m70", "L2r70", "L3H0", "L3H1.5", "L3H3"]
+
+
+def compare_figures(datas):
+    """Dwa pliki: utrata wideo i tła, Clos vs mesh (te same harmonogramy), wybrane warianty."""
+    topos = [t for t in ("Clos", "Mesh") if t in datas]
+    if len(topos) < 2:
+        return []
+    shade_of = {"Clos": 0.0, "Mesh": 0.45}
+    paths = []
+    for key, title, slug in (("vloss", "Utrata pakietów wideo", "utrata_wideo"),
+                             ("bgloss", "Utrata pakietów ruchu tła", "utrata_tla")):
+        fig, ax = plt.subplots(figsize=(10, 5.6))
+        vs = [v for v in COMPARE if all(v in datas[t] for t in topos)]
+        w = 0.38
+        top = 0
+        for j, t in enumerate(topos):
+            for i, v in enumerate(vs):
+                s = series(datas[t], v, key)
+                m, e = mean(s), sd(s)
+                top = max(top, m + e)
+                ax.bar(i + (j - 0.5) * w, m, width=w * 0.92, color=shade(COLOR[v], shade_of[t]),
+                       hatch=None if t == "Clos" else "////", edgecolor=INK2 if t == "Mesh" else SURFACE,
+                       linewidth=0.6, yerr=e, error_kw=dict(ecolor=INK2, elinewidth=1, capsize=2.5), zorder=3)
+                ax.text(i + (j - 0.5) * w, m + e + 0.6, "%.1f" % m, ha="center", va="bottom", fontsize=7.5, color=INK2, rotation=90)
+        ax.set_xticks(range(len(vs)))
+        ax.set_xticklabels(vs, fontsize=9)
+        ax.set_ylabel("%")
+        ax.set_ylim(0, top * 1.3)
+        ax.grid(axis="x", visible=False)
+        handles = [plt.Rectangle((0, 0), 1, 1, facecolor="#cfcfcb", edgecolor=INK2, hatch=h)
+                   for h in (None, "////")][:len(topos)]
+        fig.legend(handles, topos, frameon=False, fontsize=10, loc="lower center", ncol=2)
+        fig.suptitle("%s: Clos i mesh" % title, x=0.01, ha="left", fontsize=12.5, fontweight="bold")
+        fig.text(0.01, 0.905, "Średnia ± odchylenie standardowe z 20 powtórzeń; te same harmonogramy ruchu w obu topologiach",
+                 fontsize=9, color=INK2)
+        fig.tight_layout(rect=(0, 0.07, 1, 0.9))
+        paths.append(save(fig, "porownanie_topologii_%s.png" % slug))
+    return paths
+
+
 def main():
-    os.makedirs(OUT, exist_ok=True)
-    outputs = []
+    global OUT
+    outputs, datas = [], {}
     for topo in SOURCES:
         print("Topologia", topo)
+        OUT = os.path.join(OUT_BASE, "wykresy-" + topo.lower())
+        os.makedirs(OUT, exist_ok=True)
         data, used = load_topology(topo)
         if not data:
             continue
+        datas[topo] = data
         n = max(len(r) for r in data.values())
         outputs += bars_figure(topo, data, n)
         outputs += curves_figure(topo, data)
@@ -566,6 +616,9 @@ def main():
         outputs += export_csv(topo, data, dirs)
         if topo == "Clos" and NO_METER:
             outputs += meter_figure(data)
+    OUT = os.path.join(OUT_BASE, "wykresy-porownanie-topologii")
+    os.makedirs(OUT, exist_ok=True)
+    outputs += compare_figures(datas)
     print("Zapisano:")
     for p in outputs:
         print(" ", p)

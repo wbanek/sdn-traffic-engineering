@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-11-05)
+# Status projektu (ostatnia aktualizacja: 2026-11-05, wieczór)
 
 ## Pliki topologii (od 2026-11-01)
 | Plik | Co | Lab (`name:`) |
@@ -13,11 +13,11 @@ Wszystkie cztery topologie mają po 7 przełączników/routerów, 12 hostów (h1
 10.1.L.10/11/12) i 12 łączy fabric 10 Mb/s (`burst 100kbit`) oraz 12 łączy hostów 100 Mb/s
 (`burst 320kbit`). Zbiór łączy i numery `ethN` są identyczne w parach SDN/FRR (sprawdzone
 skryptem). Mesh: edge1–edge2, edge3–edge4, edge↔core (po 2), core1–core3, core2–core3;
-przełączniki brzegowe dpid 1–4, core 0x11–0x13. **Mesh SDN był wdrażany i mierzony
-(2026-11-01/02): wiarygodne są tylko lllb i qos100 (bez meterów); serie z meterami na mesh
-powstały z wadliwym kontrolerem i są unieważnione. `mesh-frr` (OSPF) nie był wdrażany ani
-mierzony** (sprawdzone parsowanie `mesh-sdn` przez `topo.py`, np. edge1→edge4: 1 ścieżka
-2-hopowa przez core2 + trzy 3-hopowe, oraz spójność /31, router-id i bindów w `mesh-frr`).
+przełączniki brzegowe dpid 1–4, core 0x11–0x13. **Mesh ma wyniki oficjalne** (2026-11-05, patrz „Wyniki
+pomiarów”): `mesh-frr` zweryfikowany (OSPF: krawędzie 3, rdzenie 4 sąsiadów Full po ok. 1,5 min,
+pingi 12/12, hash L4) i zmierzony razem z wariantami SDN; wcześniejsze serie na mesh z meterami
+(wadliwy kontroler) są unieważnione. Ścieżki wg `topo.py`, np. edge1→edge4: 1 ścieżka 2-hopowa
+przez core2 + trzy 3-hopowe; OSPF z równymi kosztami daje tam 1 ścieżkę (koszt 30).
 W mesh najkrótsza ścieżka bywa jedna, więc OSPF-ECMP ma tam mniej równoważnych ścieżek niż
 SDN (`slack=1`) — różnica wynika z natury algorytmów.
 
@@ -218,8 +218,9 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   - uruchamianie bez sudo (użytkownik w grupie `clab_admins` i `docker`); matplotlib tylko
   w `.venv` (analizę puszczać `.venv/bin/python`)
   - `analysis/summary_charts.py` (w repozytorium): wykresy zbiorcze (każdy osobnym PNG) i CSV z
-  danymi w `results/official/wykresy-clos/` z wyników oficjalnych (`.venv/bin/python
-  analysis/summary_charts.py [katalog]`); metody: słupkowe, krzywe R i H, kompromis wideo/tło,
+  danymi w `results/official/wykresy-clos/`, `wykresy-mesh/` i `wykresy-porownanie-topologii/`
+  (Clos vs mesh: utrata wideo i tła) z wyników oficjalnych (`.venv/bin/python
+  analysis/summary_charts.py [katalog_bazowy]`); metody: słupkowe, krzywe R i H, kompromis wideo/tło,
   przebiegi czasowe. Wzorzec `results/official/clos-sdn/*` obejmuje wszystkie części serii
   (katalogi bez `flows.csv` są pomijane; wariant w dwóch katalogach = błąd); porównanie „z meterem
   / bez” wyłączone (`NO_METER = None`: dane bez metera to 5 powtórzeń sprzed poprawek)
@@ -229,10 +230,10 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   parach), powtorzenia, strumienie, przebiegi_usrednione, timeseries_surowe, lacza, harmonogram;
   liczby jako liczby (polski Excel). Wymaga `openpyxl` w `.venv`
   - **Wyniki oficjalne** w `results/official/<topologia>/<znacznik czasu>/` (`clos-frr`,
-  `clos-sdn`; w przyszłości `mesh-frr`, `mesh-sdn`): 20 powtórzeń, seed 42, każdy katalog ma
+  `clos-sdn`, `mesh-frr`, `mesh-sdn`; seria niższego obciążenia w `results/official/load-<arrival_rate>/<topologia>/`): 20 powtórzeń, seed 42, każdy katalog ma
   `PROVENANCE.txt` (czas, hash kodu `controllers/*.py` + topologii, wersje i digesty obrazów, CPU),
   `report.md`, CSV, wykresy i `dane_excel.xlsx` (surowe `raw/` poza gitem: `results/**/raw/` w
-  `.gitignore`). Zbiorczy plik do Excela: `results/official/dane_clos_wszystko.xlsx`
+  `.gitignore`). Zbiorcze pliki do Excela: `results/official/dane_clos_wszystko.xlsx`, `dane_mesh_wszystko.xlsx`
 - **Wyniki pomiarów** (Clos, UDP `-l 1400`, wideo 3 Mb/s DSCP 46; pełne raporty w `results/`):
   - `lllb-vs-rr-basic` (5 pow., scenariusz deterministyczny): wideo LLLB 3,04 ± 2,10% strat,
   RR 0,00%; tło LLLB 0,07 / 0,03 / 0,01 / 3,53%, RR 30,5 / 44,2 / 6,3 / 44,6%; odrzuceń
@@ -278,6 +279,39 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
     | L1 m90 / m70 / m50 / m30 | 0 / 0 / 1,8 / 3,6% | 0 / 0 / 9 / 12 | 20,4 / 14,5 / 11,2 / 7,4% | 0,07 / 0,07 / 0,21 / 0,26 | 0,06 / 0,05 / 58 / 59 |
     | L2 r90 / r70 / r50 / r30 | 0 / 0,02 / 2,4 / 3,5% | 0 / 0 / 13 / 13 | 14,4 / 13,0 / 9,6 / 7,7% | 0,07 / 0,08 / 0,26 / 0,26 | 0,06 / 0,05 / 59 / 59 |
     | L3 H=0 / 1,5 / 3 Mb/s | 0,07 / 0,01 / 0,00% | 0 / 0 / 0 | 6,7 / 8,7 / 10,2% | 0,11 / 0,07 / 0,07 | 9,6 / 0,05 / 0,05 |
+
+  - **WYNIKI OFICJALNE, mesh, 20 powtórzeń (2026-11-05)**, seed 42, harmonogramy identyczne z Clos
+  (20/20), skrót kodu `abf842d8…` bez zmian przez obie części, 0 `Traceback` w kontrolerach.
+  Katalogi: `results/official/mesh-frr/20261105_080732` (ecmp), `results/official/mesh-sdn/
+  20261105_123304` (część 1) i `20261105_150652` (część 2 + kotwica). Kotwica vs `qos100`: wideo
+  +0,05 ± 0,11 pp, tło −0,62 ± 1,12 pp (brak dryfu). 68 strumieni tła bez raportu serwera iperf3
+  (`Bad file descriptor`, głównie qos100 przy utracie tła ok. 26%): pominięte w statystykach
+  tła, więc utrata tła w qos100 może być lekko niedoszacowana. Średnia ± sd:
+
+    | wariant | wideo: utrata | powt. z utratą > 1% | tło: utrata | RTT p95 wideo, mediana [ms] |
+    |---|---|---|---|---|
+    | ecmp (A) | 10,9 ± 8,0% | 19/20 | 10,4 ± 5,5% | 67 |
+    | lllb (B) | 10,2 ± 6,2% | 18/20 | 8,5 ± 4,4% | 118 |
+    | qos100 | 0,05 ± 0,24% | 1/20 | 26,0 ± 7,5% | 0,05 |
+    | L1 m90 / m70 / m50 / m30 | 0 / 0 / 2,6 / 4,0% | 0 / 0 / 12 / 13 | 32,8 / 22,5 / 15,3 / 12,1% | 0,05 / 0,05 / 59 / 59 |
+    | L2 r90 / r70 / r50 / r30 | 0 / 0 / 1,9 / 6,6% | 0 / 0 / 11 / 15 | 26,8 / 21,7 / 15,3 / 11,0% | 0,05 / 0,05 / 59 / 60 |
+    | L3 H=0 / 1,5 / 3 Mb/s | 0,08 / 0,01 / 0,00% | 0 / 0 / 0 | 10,2 / 12,5 / 14,6% | 15,6 / 0,05 / 0,05 |
+
+  - **wnioski, mesh** (różnice sparowane ± połowa CI95, pkt proc.): (1) na mesh SDN LLLB nie
+  poprawia wideo względem ecmp (ecmp − lllb: wideo +0,7 ± 3,3, tło +1,9 ± 1,5); na Clos było
+  +8,9 pp (hipoteza, niesprawdzona: mało równoważnych ścieżek, oba strumienie wideo trafiają na
+  wspólne łącza do edge4); (2) rezerwa działa jak na Clos: R ≥ 70 → wideo 0% (wyjątek: 1 powt.
+  qos100 z utratą 1,1% — `vid2` poszedł ścieżką poza drzewem wideo, nie wyjaśnione), R ≤ 50 → 1,9–6,6%;
+  (3) koszt rezerwy dla tła na mesh jest znacznie większy niż na Clos (qos100: 26,0% vs 12,9%;
+  lllb − qos100: tło −17,5 ± 2,3); (4) L3 jest tu jeszcze cenniejszy: L3H1.5 − qos100 tło
+  −13,4 ± 2,6 (Clos: −4,2), L3H1.5 − m70 −10,0 ± 1,8, L3H1.5 − L2r70 −9,2 ± 2,5; względem lllb
+  wideo −10,2 ± 2,9 za +4,05 ± 1,4 tła (Clos: +3,8); (5) L1/L2 przy R = 70 niewiele: m70 − qos100
+  tło −3,5 ± 2,0, L2r70 − m70 −0,8 ± 2,0; L2 pomaga tylko przy R = 90 (L2r90 − m90 −6,0 ± 2,4);
+  m90 − qos100: +6,9 ± 2,3 (jak na Clos); (6) H = 0: najmniej tła (10,2%) kosztem śladowych strat
+  wideo (max 0,4%) i RTT 15,6 ms; H = 3 − H = 1,5: +2,1 ± 1,6 tła
+  - **mesh − Clos** (sparowane po powtórzeniach): ecmp wideo −2,9 ± 5,4, tło −1,7 ± 2,7 (bez
+  różnicy); lllb wideo +5,3 ± 3,0, tło +3,6 ± 1,4; qos100 tło +13,1 ± 2,2; L3H1.5 tło +3,9 ± 1,4,
+  wideo bez różnicy — topologia mocno wpływa na koszt rezerwy, słabo na ecmp
 
   - **wnioski oficjalne** (różnice sparowane na tych samych harmonogramach, ± połowa CI95 w pkt
   proc.): (1) ecmp − lllb: wideo +8,9 ± 4,8, tło +7,2 ± 2,3 — ecmp gorszy w obu metrykach;
@@ -343,10 +377,9 @@ przyjętych (tło dławione meterem zamiast przekierowane), dobór H pod scenari
 - Poziomy obciążenia tła 50/70/90% **nie są sterowane**: generator ma tylko `arrival_rate`,
 `duration_mean`, `rate`; losowe tło daje silne przeciążenie (MLU 102–125%, 8–19 z 24 łączy
 > 90% w powtórzeniu). Brak parametru „docelowe obciążenie” w runnerze
-- Mesh: zmierzone tylko lllb i qos100 (bez meterów); L1–L3 na mesh i `mesh-frr` (ECMP) nie
-były mierzone, brak sprawdzenia, że OSPF w `configs/frr/mesh/` zestawia sąsiadów Full
-- Wyniki oficjalne (20 powtórzeń, CI95 i różnice sparowane) są tylko dla Clos, jeden poziom
-obciążenia tła (`arrival_rate` 1,0) i jeden profil wideo (2 × 3 Mb/s); mesh bez wyników oficjalnych.
+- Wyniki oficjalne (20 powtórzeń, CI95 i różnice sparowane) dla Clos i mesh przy `arrival_rate` 1,0;
+niższe obciążenie (0,4 i 0,7: ecmp, lllb, qos100, L3H1.5) w toku/do analizy w `results/official/load-*`;
+jeden profil wideo (2 × 3 Mb/s), tylko UDP.
 Skalowanie 10 Mb/s ≙ 10 Gb/s (3 Mb/s ≙ ~3 Gb/s ≈ nieskompresowane 1080p60) to hipoteza do
 sprawdzenia w źródłach; opóźnienia bezwzględne w ms nie skalują się (`tbf latency 50ms`)
 - **Ograniczenie LLLB (cecha algorytmu, nie błąd):** przy Packet-In rozmiar przepływu jest
@@ -553,22 +586,24 @@ obciążenia 50/70/90% — patrz „Następny krok”.
 PortStatus / fast-failover nie są implementowane
 
 ## Następny krok
-- Zacommitować: `results/official/`, `analysis/export_excel.py`, `analysis/summary_charts.py`,
-`.gitignore`, `docs/status.md`, `README.md`; przed wyłączeniem VM zawsze `git push`
-- Porządki: usunąć unieważnione i wstępne wyniki (`results/meter-sweep-*`, `layers-clos*`,
-`clos-full`, `clos-layers`, `results/summary`, puste katalogi) po zatwierdzeniu wyników oficjalnych
-- **Mesh oficjalnie** (20 powtórzeń, seed 42, ta sama procedura jak dla Clos): najpierw wdrożyć
-  `mesh-frr` i sprawdzić OSPF (sąsiedzi Full, ECMP), potem ecmp, a następnie warianty SDN w dwóch
-  częściach (kluczowe, potem punkty krzywych + kotwica); wyniki do `results/official/mesh-frr` i
-  `mesh-sdn`; kod kontrolera zamrozić na czas obu części
+- Zacommitować: `results/official/mesh-*`, wykresy (`wykresy-*`), `dane_mesh_wszystko.xlsx`,
+`analysis/summary_charts.py`, `docs/status.md`, `README.md`, usunięcie `results/layers-clos*`;
+potem wyniki serii `results/official/load-*`; przed wyłączeniem VM zawsze `git push`
+- Porządki: wyniki wstępne (5 pow.) `clos-full`, `clos-layers`, `results/summary`, `reserve-sweep`,
+`mesh-lllb-vs-qos` do usunięcia po zatwierdzeniu wyników oficjalnych (usunięte 2026-11-05:
+`layers-clos*`, `mesh-test`, puste katalogi po dry-runach; lokalne `raw/` starych serii zostały)
+- **Seria niższego obciążenia** (`arrival_rate` 0,4 i 0,7; ecmp, lllb, qos100, L3H1.5; Clos i mesh;
+  20 powtórzeń, seed 42) w toku od 2026-11-05 20:45: wyniki w `results/official/load-0.4/` i
+  `load-0.7/`; do analizy: porównanie trzech poziomów obciążenia (czy ecmp nadrabia przy niskim
+  obciążeniu, koszt rezerwy rośnie z obciążeniem)
 - Czułość na tempo wideo (np. 1,5 / 3 / 4,5 Mb/s; `VIDEO_EST_BPS` obecnie stałe 3 Mb/s —
   uczynić zmienną env lub adaptacyjną) i poziomy obciążenia tła (patrz niżej)
 - Zbadać powtórzenia z długim RTT w L3H1.5 (średnia 2,8 ms, mediana 0,05 ms)
 - Opcjonalnie: macierz 2×2 z kolejkami (`shape.sh <iface> <rate> <tbf|prio>`, `htb` z klasami
 wideo/reszta, filtr `u32 match ip dsfield 0xb8 0xfc`, zmienna `QDISC` w topologiach) jako
 porównanie z meterami
-- Sterowane poziomy obciążenia tła 50/70/90% (parametr docelowego obciążenia w generatorze
-albo dobór `arrival_rate`); jedna seria na poziom
+- Poziomy obciążenia tła: zrealizowane przez dobór `arrival_rate` (0,4 / 0,7 / 1,0), nie przez
+docelowe 50/70/90% łącza (nie ma takiego parametru w generatorze)
 - Opis ograniczeń w pracy: jeden poziom obciążenia, jeden profil wideo, ecmp zależny od portów
 źródłowych iperf3 (hash L4, wynik nie jest powtarzalny per harmonogram), wiele porównań naraz
 bez poprawki
