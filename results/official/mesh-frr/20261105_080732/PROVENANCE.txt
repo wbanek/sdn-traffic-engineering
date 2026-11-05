@@ -1,0 +1,17 @@
+Seria: mesh-frr (ecmp), 20 powtórzeń
+Start: 2026-11-05T08:07:31+01:00
+Koniec: 2026-11-05T08:34:39+01:00
+git HEAD: 7aa7804e3ace2598c0862026e1c10f1b0f6380a9
+git status (zmiany niezacommitowane):
+A  results/official/mesh-frr/20261105_080732/scenario.yml
+A  results/official/mesh-frr/20261105_080732/schedule.json
+?? results/official/mesh-frr/20261105_080732/PROVENANCE.txt
+containerlab:     version: 0.79.0
+kernel: 7.0.0-38-generic  rdzenie: 4  pamięć: 7398 MB
+scenariusz sha256: c70f3a5d080c0e15691620bd701abd8dbd32d06a5f1328ce9a51c01a1f69e8c1
+obrazy:
+sdn-ryu:4.34 sha256:4aeb89e214b2c076635b4fd0558f0157154775d6c9dee12994df870388ad0ce3
+kathara/sdn:latest sha256:19cb5b383367e1d204e76f7e6e65753fbc947647747879f24883558a5c3fd8c5
+wbitt/network-multitool:latest sha256:db2810fe2c8d36db074eab5d98fbf861c8ed55e0786d648d3477b3de9135632e
+quay.io/frrouting/frr:9.0.1 sha256:ae8f7fb75055845f194984b6defb731eef5579420c227c772b38ea340026cd9c
+osrg/ryu:latest sha256:863c63d95a53f45ebdc7b6f111af0032af275e427e0d8d26355f6fc8e57747c8
