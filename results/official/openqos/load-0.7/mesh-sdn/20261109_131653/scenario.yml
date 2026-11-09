@@ -1,0 +1,23 @@
+# OFICJALNA seria wariantu D (czysty OpenQoS: openqos, CONG_WEIGHT=1, DMAX_SLACK=1, OPENQOS_BE=hash), mesh, arrival_rate 0.7, 20 powtórzeń; wyniki w results/official/openqos/load-0.7/mesh-sdn/.
+# Seed 42 i generator identyczne jak w seriach load-0.7 (ecmp, lllb, qos100, L3H1.5) -> te same harmonogramy, porównania sparowane. Kod kontrolera bez zmian względem serii OpenQoS 1,0 (skrót 81a760eb...), więc kotwice nie są potrzebne.
+name: mesh-sdn
+topology: mesh
+variants:
+  - {name: openqos, policy: openqos}
+duration: 60
+warmup: 5
+repetitions: 20
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 0.7
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

@@ -609,7 +609,7 @@ def compare_figures(datas):
 
 # ---------------------------------------------------------------- poziomy obciążenia tła
 LOAD_LEVELS = [("0.4", 0.4), ("0.7", 0.7)]     # katalogi results/official/load-<poziom>/; 1.0 = główne wyniki
-LOAD_VARIANTS = ["ecmp", "lllb", "qos100", "L3H1.5"]
+LOAD_VARIANTS = ["ecmp", "lllb", "openqos", "qos100", "L3H1.5"]
 
 
 def load_levels(datas):
@@ -621,6 +621,9 @@ def load_levels(datas):
             part = {}
             for d in expand("results/official/load-%s/%s-*/*" % (name, topo.lower())):
                 part.update(load(d, {v: v for v in LOAD_VARIANTS}))
+            # D (czysty OpenQoS) z osobnej serii: results/official/openqos/load-<poziom>/<topologia>-sdn/*
+            for d in expand("results/official/openqos/load-%s/%s-sdn/*" % (name, topo.lower())):
+                part.update(load(d, {"openqos": "openqos"}))
             if part:
                 out[topo][lvl] = part
     return out
@@ -643,14 +646,14 @@ def load_figures(datas):
                 xs = [l for l in levels if v in lv[topo][l]]
                 ms = [mean(series(lv[topo][l], v, key)) for l in xs]
                 ss = [sd(series(lv[topo][l], v, key)) for l in xs]
-                ax.errorbar(xs, ms, yerr=ss, color=COLOR[v], marker="o", ms=6, lw=2, capsize=3, elinewidth=1, label=v)
+                ax.errorbar(xs, ms, yerr=ss, color=COLOR[v], marker="o", ms=6, lw=2, capsize=3, elinewidth=1, label=v.replace("openqos", "D (OpenQoS)"))
             ax.set_title(topo)
             ax.set_xticks(levels)
             ax.set_xlabel("arrival_rate (intensywność przepływów tła)")
         axes[0][0].set_ylabel("%s [%%]" % title)
         axes[0][0].set_ylim(bottom=-0.5 if key == "vloss" else 0)
         handles, labels = axes[0][0].get_legend_handles_labels()
-        fig.legend(handles, labels, frameon=False, fontsize=10, loc="lower center", ncol=4)
+        fig.legend(handles, labels, frameon=False, fontsize=10, loc="lower center", ncol=5)
         fig.suptitle("%s w zależności od obciążenia tła" % title, x=0.01, ha="left", fontsize=12.5, fontweight="bold")
         fig.text(0.01, 0.905, "Średnia ± odchylenie standardowe z 20 powtórzeń; te same harmonogramy dla wariantów w poziomie",
                  fontsize=9, color=INK2)
@@ -678,7 +681,9 @@ def openqos_reroutes(topo):
     """CSV: liczba przeniesień wideo OpenQoS (linie `OpenQoS reroute`) i decyzji trasy wideo UDP na powtórzenie,
     z logów kontrolera w raw/ (lokalnie; raw/ poza gitem)."""
     rows = []
-    for d in expand("results/official/openqos/%s-sdn/*" % topo.lower()):
+    sources = [(1.0, "results/official/openqos/%s-sdn/*" % topo.lower())] + [
+        (lvl, "results/official/openqos/load-%s/%s-sdn/*" % (name, topo.lower())) for name, lvl in LOAD_LEVELS]
+    for ar, d in [(ar, d) for ar, pat in sources for d in expand(pat)]:
         for v in D:
             for rep in range(1, 100):
                 log = os.path.join(d, "raw", v, "rep%d" % rep, "controller.log")
@@ -690,13 +695,13 @@ def openqos_reroutes(topo):
                         reroutes += 1
                     elif line.startswith("Flow (17,") and "video" in line:
                         decisions += 1
-                rows.append([v, rep, reroutes, decisions])
+                rows.append([ar, v, rep, reroutes, decisions])
     if not rows:
         return []
     p = os.path.join(OUT, "dane_%s_openqos_przeniesienia.csv" % topo.lower())
     with open(p, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["wariant", "powtorzenie", "przeniesienia_wideo_zdarzenia", "decyzje_trasy_wideo_udp"])
+        w.writerow(["arrival_rate", "wariant", "powtorzenie", "przeniesienia_wideo_zdarzenia", "decyzje_trasy_wideo_udp"])
         w.writerows(rows)
     return [p]
 
