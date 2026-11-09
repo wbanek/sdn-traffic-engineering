@@ -1,4 +1,4 @@
-import os, time
+import os, time, zlib
 
 from topo import Topology
 from ryu.base import app_manager
@@ -24,6 +24,17 @@ BE_EST_INIT_BPS = 2_000_000
 PENDING_TTL = 2.5               # s; tyle zajmuje pojawienie się przepływu w FlowStats (2 próbki)
 METER_STEP_KBPS = 250           # histereza zmiany metera
 MIN_BE_BPS = 300_000            # dolna granica limitu BE na rezerwie
+
+# Wariant D (baseline): OpenQoS, Egilmez i in., APSIPA ASC 2012 - reaktywny routing QoS
+# bez rezerwacji i bez kolejek. Wideo: CSP min sum(c_ij) przy liczbie hopów <= Dmax,
+# c_ij = g_ij + 1, g_ij = (T - 0,7 B) / T dla T > 0,7 B (wzory 3-5). Tło: najkrótsza ścieżka.
+# Przenoszenie wideo = usunięcie reguł QoS przy zmianie stanu przeciążenia łącza (sekcja III-B.1).
+CONG_THRESH = 0.7               # łącze przeciążone od 70% wykorzystania
+DECONG_PERIODS = 3              # tyle okresów luzu przed uznaniem łącza za odciążone
+DMAX_SLACK = int(os.environ.get("DMAX_SLACK", "1"))        # Dmax = najkrótsza + slack [hopy]
+OPENQOS_BE = os.environ.get("OPENQOS_BE", "hash")          # hash = ECMP-podobnie, single = paths[0]
+CONG_WEIGHT = float(os.environ.get("CONG_WEIGHT", "1"))    # waga g_ij w koszcie; 1 = dosłownie wg (4)-(5)
+FLOW_CLASS_TTL = 15             # s; po tym czasie bez FlowStats klasa przepływu jest zapominana
 
 
 
@@ -65,6 +76,8 @@ class Fabric(app_manager.RyuApp):
         self.pending = {}       # (dpid, port) -> [(klasa, b/s, wygasa)]  przepływy jeszcze niewidoczne w statystykach
         self.est_be = BE_EST_INIT_BPS   # EWMA przepływności nowego przepływu best-effort
         self.meter_rate = {}    # (dpid, port) -> ostatnia stawka metera [kb/s]
+        self.flow_last = {}     # flow -> czas ostatniego widzenia (wybór lub FlowStats)
+        self.cong = {}          # openqos: (dpid, port) -> {"congested": bool, "clear": okresy luzu}
 
 
         hub.spawn(self._monitor)
@@ -243,6 +256,7 @@ class Fabric(app_manager.RyuApp):
             now = stat.duration_sec + stat.duration_nsec / 1e9
             prev = self.flow_prev.get((dpid, flow))
             self.flow_prev[(dpid, flow)] = (stat.byte_count, now)
+            self.flow_last[flow] = time.time()
 
             if prev is None:
                 continue
@@ -318,6 +332,15 @@ class Fabric(app_manager.RyuApp):
             self.rr[(src, dst)] = i + 1
             return paths[i % len(paths)]
 
+        if POLICY == "openqos":
+            # bez rezerwacji tymczasowej i bez pending - artykuł nie ma takich mechanizmów
+            if video:
+                return self.qos_route(src, dst)
+            if OPENQOS_BE == "single":
+                return paths[0]      # dosłownie: jedna najkrótsza ścieżka (Floodlight 2012)
+            shortest = [p for p in paths if len(p) == len(paths[0])]
+            return shortest[zlib.crc32(repr(flow).encode()) % len(shortest)]
+
         candidates = paths
         if POLICY == "qos":
             if video:
@@ -346,6 +369,58 @@ class Fabric(app_manager.RyuApp):
             for hop in self.topo.path_ports(best):
                 self.pending.setdefault(hop, []).append((cls, est, exp))
         return best
+
+    # ---------- wariant D: OpenQoS ----------
+    def link_cost(self, hop):
+        """c_ij = g_ij + d_ij; d_ij = 1 (hop), g_ij wg wzoru (5) z T = zmierzony ruch, B = pojemność"""
+        traffic, cap = self.link_bps.get(hop, 0.0), self.cap(hop)
+        g = (traffic - CONG_THRESH * cap) / traffic if traffic > CONG_THRESH * cap else 0.0
+        return CONG_WEIGHT * g + 1      # uwaga: g < 0,3, więc przy wadze 1 dodatkowy hop zawsze przeważa
+
+    def qos_route(self, src, dst):
+        """CSP (3) rozwiązany dokładnie na ścieżkach kandydujących (zamiast heurystyki LARAC):
+        min koszt wśród ścieżek o długości <= Dmax; remis -> pierwsza z listy (najkrótsza, najmniejszy dpid)"""
+        paths = self.paths[(src, dst)]
+        dmax = len(paths[0]) - 1 + DMAX_SLACK
+        feasible = [p for p in paths if len(p) - 1 <= dmax] or paths
+        return min(feasible, key=lambda p: sum(self.link_cost(h) for h in self.topo.path_ports(p)))
+
+    def _congestion_events(self):
+        """Stan przeciążenia każdego łącza; zmiana stanu -> przeniesienie przepływów QoS.
+        (1) łącze luźne staje się przeciążone; (2) łącze przeciążone jest luźne przez DECONG_PERIODS okresów"""
+        changed = []
+        for hop in self.link_peer:
+            util = self.link_bps.get(hop, 0.0) / self.cap(hop)
+            st = self.cong.setdefault(hop, {"congested": False, "clear": 0})
+            if util > CONG_THRESH:
+                if not st["congested"]:
+                    st["congested"] = True
+                    changed.append(f"{self._hop_name(hop)} congested {util:.0%}")
+                st["clear"] = 0
+            elif st["congested"]:
+                st["clear"] += 1
+                if st["clear"] >= DECONG_PERIODS:
+                    st["congested"], st["clear"] = False, 0
+                    changed.append(f"{self._hop_name(hop)} clear")
+        if changed:
+            self._flush_video_flows(", ".join(changed))
+
+    def _flush_video_flows(self, reason):
+        """Usunięcie reguł wszystkich przepływów wideo na wszystkich przełącznikach; następny pakiet
+        każdego z nich trafi jako Packet-In i dostanie trasę policzoną na świeżych kosztach"""
+        flows = [f for f, cls in self.flow_class.items() if cls == "video"]
+        for flow in flows:
+            self.active.pop(flow, None)      # wymuszenie nowego wyboru przy Packet-In
+            for dp in self.datapaths.values():
+                ofp, parser = dp.ofproto, dp.ofproto_parser
+                dp.send_msg(parser.OFPFlowMod(
+                    datapath=dp, command=ofp.OFPFC_DELETE, priority=70,
+                    out_port=ofp.OFPP_ANY, out_group=ofp.OFPG_ANY,
+                    match=self._flow_match(parser, flow)))
+        self.logger.info("OpenQoS reroute: %s -> %d QoS flows flushed", reason, len(flows))
+
+    def _hop_name(self, hop):
+        return f"{self.topo.names[hop[0]]}:{hop[1]}->{self.topo.names[self.link_peer[hop]]}"
 
 
     # ---------- ARP ----------
@@ -443,6 +518,7 @@ class Fabric(app_manager.RyuApp):
         else:
             loads = [self.path_load(p) for p in self.paths[(src_edge, dst_edge)]]
             self.flow_class[flow] = "video" if video else "be"
+            self.flow_last[flow] = now
             path = self.select_path(flow, src_edge, dst_edge, video)
             self.active[flow] = (path, now)
             new = True
@@ -494,8 +570,13 @@ class Fabric(app_manager.RyuApp):
             now = time.time()
             self.active = {f: v for f, v in self.active.items() if now - v[1] < 2}
             self.pending = {h: [e for e in l if e[2] > now] for h, l in self.pending.items()}
+            for flow in [f for f, t in self.flow_last.items() if now - t > FLOW_CLASS_TTL]:
+                del self.flow_last[flow]
+                self.flow_class.pop(flow, None)
             if LAYERS >= 3 and POLICY == "qos":
                 self._update_meters()
+            if POLICY == "openqos":
+                self._congestion_events()
 
             hub.sleep(1)
 

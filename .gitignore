@@ -9,3 +9,4 @@ scenarios/
 results/*/*/raw/
 # wyniki oficjalne: results/official/<topologia>/<czas>/raw (dowolna głębokość)
 results/**/raw/
+OpenQoS.pdf

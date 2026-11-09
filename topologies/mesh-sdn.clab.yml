@@ -16,6 +16,9 @@ topology:
         LAYERS: ${LAYERS:=1}
         MARGIN: ${MARGIN:=0.1}
         HEADROOM_MBPS: ${HEADROOM_MBPS:=0}
+        OPENQOS_BE: ${OPENQOS_BE:=hash}
+        DMAX_SLACK: ${DMAX_SLACK:=1}
+        CONG_WEIGHT: ${CONG_WEIGHT:=1}
       cmd: ryu-manager --verbose --ofp-tcp-listen-port 6653 /controllers/controller_ryu.py
 
   # --- CORE (tranzyt, bez hostów) ---
