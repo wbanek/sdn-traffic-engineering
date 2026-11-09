@@ -607,6 +607,73 @@ def compare_figures(datas):
     return paths
 
 
+# ---------------------------------------------------------------- poziomy obciążenia tła
+LOAD_LEVELS = [("0.4", 0.4), ("0.7", 0.7)]     # katalogi results/official/load-<poziom>/; 1.0 = główne wyniki
+LOAD_VARIANTS = ["ecmp", "lllb", "qos100", "L3H1.5"]
+
+
+def load_levels(datas):
+    """Wyniki przy arrival_rate 0,4 / 0,7 (seria obciążeniowa) + 1,0 z głównych wyników: {topologia: {poziom: {wariant: {rep: metryki}}}}"""
+    out = {}
+    for topo in datas:
+        out[topo] = {1.0: {v: datas[topo][v] for v in LOAD_VARIANTS if v in datas[topo]}}
+        for name, lvl in LOAD_LEVELS:
+            part = {}
+            for d in expand("results/official/load-%s/%s-*/*" % (name, topo.lower())):
+                part.update(load(d, {v: v for v in LOAD_VARIANTS}))
+            if part:
+                out[topo][lvl] = part
+    return out
+
+
+def load_figures(datas):
+    """Dwa pliki (wideo, tło): utrata w funkcji poziomu obciążenia tła (arrival_rate), panele = topologie;
+    plus CSV ze średnimi."""
+    lv = load_levels(datas)
+    topos = [t for t in ("Clos", "Mesh") if t in lv and len(lv[t]) > 1]
+    if not topos:
+        return []
+    paths = []
+    for key, title, slug in (("vloss", "Utrata pakietów wideo", "utrata_wideo"),
+                             ("bgloss", "Utrata pakietów ruchu tła", "utrata_tla")):
+        fig, axes = plt.subplots(1, len(topos), figsize=(5.6 * len(topos), 5.2), sharey=True, squeeze=False)
+        for ax, topo in zip(axes[0], topos):
+            levels = sorted(lv[topo])
+            for v in LOAD_VARIANTS:
+                xs = [l for l in levels if v in lv[topo][l]]
+                ms = [mean(series(lv[topo][l], v, key)) for l in xs]
+                ss = [sd(series(lv[topo][l], v, key)) for l in xs]
+                ax.errorbar(xs, ms, yerr=ss, color=COLOR[v], marker="o", ms=6, lw=2, capsize=3, elinewidth=1, label=v)
+            ax.set_title(topo)
+            ax.set_xticks(levels)
+            ax.set_xlabel("arrival_rate (intensywność przepływów tła)")
+        axes[0][0].set_ylabel("%s [%%]" % title)
+        axes[0][0].set_ylim(bottom=-0.5 if key == "vloss" else 0)
+        handles, labels = axes[0][0].get_legend_handles_labels()
+        fig.legend(handles, labels, frameon=False, fontsize=10, loc="lower center", ncol=4)
+        fig.suptitle("%s w zależności od obciążenia tła" % title, x=0.01, ha="left", fontsize=12.5, fontweight="bold")
+        fig.text(0.01, 0.905, "Średnia ± odchylenie standardowe z 20 powtórzeń; te same harmonogramy dla wariantów w poziomie",
+                 fontsize=9, color=INK2)
+        fig.tight_layout(rect=(0, 0.07, 1, 0.9))
+        paths.append(save(fig, "obciazenie_%s.png" % slug))
+    p = os.path.join(OUT, "dane_obciazenie.csv")
+    with open(p, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["topologia", "arrival_rate", "wariant", "powtorzenia"] +
+                   [h for _, n in METRICS for h in (n + "_srednia", n + "_sd")])
+        for topo in topos:
+            for lvl in sorted(lv[topo]):
+                for v in LOAD_VARIANTS:
+                    if v not in lv[topo][lvl]:
+                        continue
+                    row = [topo, lvl, v, len(lv[topo][lvl][v])]
+                    for k, _ in METRICS:
+                        xs = series(lv[topo][lvl], v, k)
+                        row += [round(mean(xs), 4) if xs else "", round(sd(xs), 4) if xs else ""]
+                    w.writerow(row)
+    return paths + [p]
+
+
 def openqos_reroutes(topo):
     """CSV: liczba przeniesień wideo OpenQoS (linie `OpenQoS reroute`) i decyzji trasy wideo UDP na powtórzenie,
     z logów kontrolera w raw/ (lokalnie; raw/ poza gitem)."""
@@ -656,6 +723,9 @@ def main():
         outputs += openqos_reroutes(topo)
         if topo == "Clos" and NO_METER:
             outputs += meter_figure(data)
+    OUT = os.path.join(OUT_BASE, "wykresy-obciazenie")
+    os.makedirs(OUT, exist_ok=True)
+    outputs += load_figures(datas)
     OUT = os.path.join(OUT_BASE, "wykresy-porownanie-topologii")
     os.makedirs(OUT, exist_ok=True)
     outputs += compare_figures(datas)

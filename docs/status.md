@@ -304,6 +304,48 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   - Ograniczenia: reimplementacja (Ryu + OF 1.3, DSCP zamiast portu, CSP dokładnie zamiast LARAC,
     `Dmax` = najkrótsza + 1), `openqos_w5` i `openqos_single` to badanie czułości na wybory niedookreślone
     w artykule; D niezmierzony przy `arrival_rate` 0,4 / 0,7
+  - **WYNIKI OFICJALNE, niższe obciążenie tła (2026-11-05/09, `arrival_rate` 0,4 i 0,7; ecmp, lllb, qos100, L3H1.5;
+  Clos i mesh; 20 powtórzeń, seed 42)**: katalogi `results/official/load-0.4/` i `load-0.7/`
+  (`clos-frr`, `clos-sdn`, `mesh-frr`, `mesh-sdn`), harmonogramy identyczne we wszystkich czterech katalogach danego
+  poziomu (średnio 24 / 40 przepływów na powtórzenie wobec 54 przy 1,0), 0 `Traceback`. Seria została
+  przerwana restartem maszyny (06.11 ok. 01:34, `mesh-frr` 0,7 w powt. 15) i dokończona 08–09.11 (nowe katalogi
+  `mesh-frr`/`mesh-sdn`; niekompletny katalog usunięty). **Adnotacja:** `load-0.7/mesh-sdn` — w trakcie serii
+  zmienił się kod kontrolera (krok 11; qos100/L3H1.5 od powt. 11, lllb od 12 na nowym kodzie; `PROVENANCE.txt`:
+  „UWAGA”); kotwice z serii OpenQoS (różnice 0 w obu topologiach) wskazują, że B/C się nie zmieniły. Średnie
+  obciążenie łączy fabric (ecmp): Clos 17,5 / 27,7 / 35,9%, mesh 14,7 / 23,0 / 29,6% (dla 0,4 / 0,7 / 1,0).
+  Średnia ± sd; utrata wideo (powt. z utratą > 1%) / utrata tła:
+
+    | topologia, wariant | 0,4: wideo | 0,4: tło | 0,7: wideo | 0,7: tło | 1,0: wideo | 1,0: tło |
+    |---|---|---|---|---|---|---|
+    | Clos ecmp | 2,2 ± 2,9% (12) | 3,5% | 8,4 ± 9,5% (18) | 7,5% | 13,8 ± 9,6% (18) | 12,1% |
+    | Clos lllb | 0,19 ± 0,75% (1) | 0,4% | 1,3 ± 1,9% (7) | 1,5% | 4,9 ± 4,6% (16) | 4,9% |
+    | Clos qos100 | 0,00% (0) | 2,4% | 0,00% (0) | 6,6% | 0,00% (0) | 12,9% |
+    | Clos L3H1.5 | 0,05 ± 0,16% (0) | 2,2% | 0,03 ± 0,11% (0) | 4,0% | 0,01 ± 0,04% (0) | 8,7% |
+    | mesh ecmp | 1,5 ± 4,0% (5) | 2,5% | 6,1 ± 6,2% (16) | 6,8% | 10,9 ± 8,0% (19) | 10,4% |
+    | mesh lllb | 0,55 ± 1,1% (3) | 1,0% | 3,0 ± 3,3% (13) | 3,7% | 10,2 ± 6,2% (18) | 8,5% |
+    | mesh qos100 | 0,00% (0) | 6,9% | 0,01% (0) | 16,6% | 0,05 ± 0,24% (1) | 26,0% |
+    | mesh L3H1.5 | 0,41 ± 1,65% (1) | 4,5% | 0,00% (0) | 7,3% | 0,01% (0) | 12,5% |
+
+  - **wnioski, obciążenie** (różnice sparowane ± połowa CI95, pkt proc.): (1) straty wideo w ecmp i lllb rosną
+    z obciążeniem (Clos ecmp 2,2 → 8,4 → 13,8%, lllb 0,19 → 1,3 → 4,9%), a w qos100/L3H1.5 pozostają ≈ 0 na
+    wszystkich poziomach; (2) **przy niskim obciążeniu rezerwa się nie opłaca**: Clos 0,4 lllb − L3H1.5 wideo
+    +0,14 ± 0,36 (bez różnicy), tło −1,8 ± 1,3 (lllb lepszy); mesh 0,4 lllb − L3H1.5 wideo +0,15 ± 0,97 (bez
+    różnicy), tło −3,5 ± 1,8; zysk wideo z C względem lllb staje się istotny od 0,7 (Clos +1,26 ± 0,88, mesh
+    +3,02 ± 1,56) i duży przy 1,0 (+4,9 / +10,2); (3) koszt rezerwy dla tła rośnie z obciążeniem: qos100
+    Clos 2,4 → 6,6 → 12,9%, mesh 6,9 → 16,6 → 26,0%; (4) przewaga L3H1.5 nad qos100 w tle pojawia się dopiero
+    przy większym obciążeniu: Clos 0,4 −0,2 ± 1,2 (bez różnicy), 0,7 −2,6 ± 1,7, 1,0 −4,2 ± 1,6; mesh 0,4
+    −2,4 ± 3,2 (bez różnicy), 0,7 −9,3 ± 2,4, 1,0 −13,4 ± 2,6; (5) ecmp − lllb: Clos lllb lepszy na każdym
+    poziomie (wideo +2,0 ± 1,1 / +7,1 ± 4,2 / +8,9 ± 4,8), mesh różnice w wideo mieszczą się w szumie
+    (+1,0 ± 1,6 / +3,0 ± 3,0 / +0,7 ± 3,3); (6) L3H1.5 − ecmp w tle: Clos −1,4 ± 1,8 / −3,5 ± 2,3 / −3,4 ± 2,1
+    (L3 lepszy od ecmp także w tle przy ≥ 0,7), mesh +2,0 ± 2,0 / +0,5 ± 1,5 / +2,1 ± 2,0 (L3 nie poprawia
+    tła względem ecmp, poprawia wideo: −1,1 ± 2,0 / −6,1 ± 2,9 / −10,9 ± 3,7)
+  - **Incydent: mesh 0,4, L3H1.5, powt. 8** (wideo 7,4%: vid1 5,9%, vid2 8,8%; jedyna taka powtórzenie, reszta ≈ 0):
+    oba strumienie na standardowej trasie wideo (vid2 `edge2→core3→core2→edge4`), straty na wspólnym łączu
+    `core2→edge4`; w logu przy starcie wideo ścieżki mają 61–72% obciążenia — hipoteza: best-effort już obecny
+    na łączu rezerwy w chwili startu wideo, a meter L3 reaguje z opóźnieniem do ok. 2 s (znane ograniczenie
+    z kroku 10), analogicznie do 1 powt. qos100 przy 1,0 na mesh (1,1%); niewyjaśnione do końca
+  - Wykresy i dane: `results/official/wykresy-obciazenie/` (`obciazenie_utrata_wideo.png`,
+    `obciazenie_utrata_tla.png`, `dane_obciazenie.csv`); generuje je `analysis/summary_charts.py`
 - **Narzędzie pomiarowe** (lokalny skill `.claude/skills/sdn-test-runner/`, poza repozytorium —
   `.claude` w `.gitignore`; scenariusze w `scenarios/*.yml`, kopia scenariusza w każdym wyniku):
   - `run_scenario.py scenarios/<nazwa>.yml [--only a,b] [--dry-run]`: dla każdego powtórzenia
@@ -406,7 +448,7 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   poprawia wideo względem ecmp (ecmp − lllb: wideo +0,7 ± 3,3, tło +1,9 ± 1,5); na Clos było
   +8,9 pp (hipoteza, niesprawdzona: mało równoważnych ścieżek, oba strumienie wideo trafiają na
   wspólne łącza do edge4); (2) rezerwa działa jak na Clos: R ≥ 70 → wideo 0% (wyjątek: 1 powt.
-  qos100 z utratą 1,1% — `vid2` poszedł ścieżką poza drzewem wideo, nie wyjaśnione), R ≤ 50 → 1,9–6,6%;
+  qos100 z utratą 1,1%; przyczyna niewyjaśniona — `vid2` idzie w mesh zawsze `edge2→core3→core2→edge4` (20/20 powt., to standardowa trasa wideo C), więc to nie ucieczka z rezerwy; hipoteza: best-effort już obecny na łączu `core2→edge4` w chwili startu wideo, patrz „Seria niższego obciążenia”), R ≤ 50 → 1,9–6,6%;
   (3) koszt rezerwy dla tła na mesh jest znacznie większy niż na Clos (qos100: 26,0% vs 12,9%;
   lllb − qos100: tło −17,5 ± 2,3); (4) L3 jest tu jeszcze cenniejszy: L3H1.5 − qos100 tło
   −13,4 ± 2,6 (Clos: −4,2), L3H1.5 − m70 −10,0 ± 1,8, L3H1.5 − L2r70 −9,2 ± 2,5; względem lllb
@@ -483,7 +525,7 @@ przyjętych (tło dławione meterem zamiast przekierowane), dobór H pod scenari
 `duration_mean`, `rate`; losowe tło daje silne przeciążenie (MLU 102–125%, 8–19 z 24 łączy
 > 90% w powtórzeniu). Brak parametru „docelowe obciążenie” w runnerze
 - Wyniki oficjalne (20 powtórzeń, CI95 i różnice sparowane) dla Clos i mesh przy `arrival_rate` 1,0;
-niższe obciążenie (0,4 i 0,7: ecmp, lllb, qos100, L3H1.5) w toku/do analizy w `results/official/load-*`;
+niższe obciążenie (0,4 i 0,7: ecmp, lllb, qos100, L3H1.5) w `results/official/load-*` (zmierzone i przeanalizowane);
 jeden profil wideo (2 × 3 Mb/s), tylko UDP.
 Skalowanie 10 Mb/s ≙ 10 Gb/s (3 Mb/s ≙ ~3 Gb/s ≈ nieskompresowane 1080p60) to hipoteza do
 sprawdzenia w źródłach; opóźnienia bezwzględne w ms nie skalują się (`tbf latency 50ms`)
@@ -697,10 +739,10 @@ potem wyniki serii `results/official/load-*`; przed wyłączeniem VM zawsze `git
 - Porządki: wyniki wstępne (5 pow.) `clos-full`, `clos-layers`, `results/summary`, `reserve-sweep`,
 `mesh-lllb-vs-qos` do usunięcia po zatwierdzeniu wyników oficjalnych (usunięte 2026-11-05:
 `layers-clos*`, `mesh-test`, puste katalogi po dry-runach; lokalne `raw/` starych serii zostały)
-- **Seria niższego obciążenia** (`arrival_rate` 0,4 i 0,7; ecmp, lllb, qos100, L3H1.5; Clos i mesh;
-  20 powtórzeń, seed 42) w toku od 2026-11-05 20:45: wyniki w `results/official/load-0.4/` i
-  `load-0.7/`; do analizy: porównanie trzech poziomów obciążenia (czy ecmp nadrabia przy niskim
-  obciążeniu, koszt rezerwy rośnie z obciążeniem)
+- **Seria niższego obciążenia** (`arrival_rate` 0,4 i 0,7): zakończona i przeanalizowana (patrz „Wyniki
+  pomiarów”); do zrobienia: wyjaśnienie incydentów (mesh 0,4 L3H1.5 powt. 8 i mesh 1,0 qos100 powt. 1)
+  na logach, ewentualnie powtórzenie `load-0.7/mesh-sdn` na zamrożonym kodzie (tylko dla porządku —
+  kotwice wskazują na równoważność)
 - **Wariant D (OpenQoS)**: zmierzony i przeanalizowany przy `arrival_rate` 1,0 (patrz krok 11); do
   zrobienia opcjonalnie D przy 0,4 i 0,7 (openqos, openqos_w5 na mesh; ok. 2 h na topologię) oraz
   jitter wokół przeniesień wideo
@@ -710,8 +752,9 @@ potem wyniki serii `results/official/load-*`; przed wyłączeniem VM zawsze `git
 - Opcjonalnie: macierz 2×2 z kolejkami (`shape.sh <iface> <rate> <tbf|prio>`, `htb` z klasami
 wideo/reszta, filtr `u32 match ip dsfield 0xb8 0xfc`, zmienna `QDISC` w topologiach) jako
 porównanie z meterami
-- Poziomy obciążenia tła: zrealizowane przez dobór `arrival_rate` (0,4 / 0,7 / 1,0), nie przez
-docelowe 50/70/90% łącza (nie ma takiego parametru w generatorze)
+- Poziomy obciążenia tła: zrealizowane przez dobór `arrival_rate` (0,4 / 0,7 / 1,0; wyniki w „Wyniki pomiarów”),
+nie przez docelowe 50/70/90% łącza (nie ma takiego parametru w generatorze); niezmierzony: D przy 0,4 / 0,7
+oraz obciążenia > 1,0
 - Opis ograniczeń w pracy: jeden poziom obciążenia, jeden profil wideo, ecmp zależny od portów
 źródłowych iperf3 (hash L4, wynik nie jest powtarzalny per harmonogram), wiele porównań naraz
 bez poprawki
