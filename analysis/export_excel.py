@@ -45,7 +45,7 @@ README = [
     ("Arkusz", "Zawartość"),
     ("podsumowanie", "Jeden wiersz na wariant: n, średnia, odchylenie standardowe (sd), przedział ufności 95% "
                     "średniej (rozkład t), mediana, min, maks dla każdej metryki."),
-    ("sparowane", "Różnice wariant − odniesienie (ecmp, lllb, qos100) liczone w parach: to samo powtórzenie, ten sam "
+    ("sparowane", "Różnice wariant − odniesienie (ecmp, lllb, qos100, L3H1.5) liczone w parach: to samo powtórzenie, ten sam "
                   "harmonogram; średnia różnica, sd, przedział ufności 95%. Przedział bez zera = różnica istotna."),
     ("powtorzenia", "Jeden wiersz na wariant i powtórzenie: metryki zagregowane (z nich liczone jest podsumowanie)."),
     ("strumienie", "Jeden wiersz na strumień (flows.csv): przepływność, jitter, utrata, RTT, ścieżka."),
@@ -61,6 +61,8 @@ README = [
     ("tlo_utrata_pct", "Σ utraconych / Σ wysłanych datagramów po strumieniach tła dłuższych niż warmup [%]."),
     ("odrzucone_pakiety", "Pakiety odrzucone na łączach fabric (liczniki tc) w jednym przebiegu."),
     ("obciazenie_lacz_pct", "Średnie obciążenie łączy fabric [%] względem 10 Mb/s."),
+    ("Kotwice", "qos100_ref = kotwica z części 2 serii SDN, qos100_ref_2 = ta sama konfiguracja z serii OpenQoS (kontrola, "
+               "że zmiany kodu nie wpłynęły na B/C); L3H1.5_ref = kotwica z serii OpenQoS."),
     ("Uwaga", "Metryki UDP pochodzą z raportu serwera (odbiorcy). Pomiary skalowane: łącza 10 Mb/s odpowiadają "
               "łączom 10 Gb/s, więc wartości opóźnień w ms nie przenoszą się wprost na rzeczywiste DC."),
 ]
@@ -153,10 +155,21 @@ def main():
     rep_rows, flows_rows, ts_rows, link_rows, sched_rows, avg_rows = [], [], [], [], [], []
     flows_head = ts_head = link_head = None
     data = {}
+    taken = set()
     for d in dirs:
         sch = json.load(open(os.path.join(d, "schedule.json")))
-        names = [v["name"] for v in sch["variants"]]
-        part = S.load(d, {v: v for v in names})
+        orig = [v["name"] for v in sch["variants"]]
+        # ta sama nazwa wariantu w kilku katalogach (np. kotwica qos100_ref) -> kolejne dostają przyrostek _2, _3...
+        rename = {}
+        for v in orig:
+            k, new = 1, v
+            while new in taken:
+                k += 1
+                new = "%s_%d" % (v, k)
+            taken.add(new)
+            rename[v] = new
+        names = [rename[v] for v in orig]
+        part = S.load(d, rename)
         for v in names:
             for rep in sorted(part.get(v, {})):
                 m = part[v][rep]
@@ -176,7 +189,7 @@ def main():
                 sched_rows.append([d, int(rep), f["id"], f["class"], f["src"], f["dst"], f["proto"],
                                    f["rate_bps"] / 1e6 if f.get("rate_bps") else None, f["dscp"],
                                    f["start"], f["duration"], f["port"]])
-        vid, jit, bgm = S.timeseries(d, {v: v for v in names})
+        vid, jit, bgm = S.timeseries(d, rename)
         for v in names:
             for t in sorted(set(vid[v]) | set(jit[v]) | set(bgm[v])):
                 avg_rows.append([d, v, t] + [round(S.mean(src[v][t]), 4) if src[v].get(t) else None
@@ -196,7 +209,7 @@ def main():
 
     # różnice sparowane (to samo powtórzenie = ten sam harmonogram): wariant - odniesienie
     pair_rows = []
-    for ref in ("ecmp", "lllb", "qos100"):
+    for ref in ("ecmp", "lllb", "qos100", "L3H1.5"):
         for v in data:
             if v == ref or ref not in data:
                 continue

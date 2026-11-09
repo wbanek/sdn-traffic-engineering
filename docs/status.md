@@ -1,4 +1,4 @@
-# Status projektu (ostatnia aktualizacja: 2026-11-05, wieczór)
+# Status projektu (ostatnia aktualizacja: 2026-11-09)
 
 ## Pliki topologii (od 2026-11-01)
 | Plik | Co | Lab (`name:`) |
@@ -63,8 +63,9 @@ portów, porty LIVE, `fail_mode: secure`, `is_connected: true`, tbf burst 12800b
 i `../topologies:/topologies:ro`, plik topologii wskazuje `env: TOPO_FILE` (musi zgadzać się
 z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart clab-clos-sdn-ryu-controller`;
 `env:` kontrolera: `POLICY: ${POLICY:=lllb}`, `RESERVE_PCT: ${RESERVE_PCT:=100}`,
-`LAYERS: ${LAYERS:=1}`, `MARGIN: ${MARGIN:=0.1}`, `HEADROOM_MBPS: ${HEADROOM_MBPS:=0}`
-(Containerlab podstawia zmienne powłoki przy deployu)
+`LAYERS: ${LAYERS:=1}`, `MARGIN: ${MARGIN:=0.1}`, `HEADROOM_MBPS: ${HEADROOM_MBPS:=0}`,
+`OPENQOS_BE: ${OPENQOS_BE:=hash}`, `DMAX_SLACK: ${DMAX_SLACK:=1}`, `CONG_WEIGHT: ${CONG_WEIGHT:=1}`
+(Containerlab podstawia zmienne powłoki przy deployu; trzy ostatnie dotyczą kroku 11)
 - **Kontroler uniwersalny (niezależny od topologii)** — 2026-10-22:
   - `controllers/topo.py` (klasa `Topology`): wczytuje plik clab i z komend exec + `links`
   buduje model sieci: przełączniki (dpid z `datapath-id`, porty z `ofport_request`),
@@ -200,6 +201,109 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
     strumień wideo uciekał z rezerwy (L2: utrata wideo 2–18% w 3–4 z 5 powtórzeń)
     3. pingi wideo (ICMP, DSCP 46) liczyły się w `pending` jak 3 Mb/s i wywoływały spill —
     teraz szacunek 0
+- **Krok 11: wariant D — baseline OpenQoS** (`POLICY=openqos`) — 2026-11-08, kod w kontrolerze,
+  **zmierzony oficjalnie 2026-11-09 (wyniki na końcu tego kroku)**. Reimplementacja wg artykułu Egilmez, Dane, Bagci, Tekalp, „OpenQoS: An
+  OpenFlow Controller Design for Multimedia Delivery with End-to-End QoS over SDN”, APSIPA ASC 2012
+  (plik `OpenQoS.pdf` w katalogu głównym, poza gitem). Cel: punkt odniesienia z literatury dla wariantu C
+  w tych samych warunkach (te same harmonogramy, porównania sparowane). OpenQoS = **reaktywny routing
+  QoS bez rezerwacji i bez kolejek** („we use neither resource reservation nor priority queuing”, s. 2),
+  czyli przeciwieństwo C; nowsze prace (ARVS 2015, VQoSRR 2022) też porównują się z OpenQoS
+  - **Wierne artykułowi:** wideo (DSCP 46) dostaje trasę z CSP (wzór 3): min `Σ c_ij` przy liczbie hopów
+  ≤ `Dmax`; koszt łącza `c_ij = g_ij + 1` (wzór 4, `d_ij = 1` = hop, bo OpenFlow nie mierzy opóźnień);
+  miara przeciążenia `g_ij = (T − 0,7·B) / T` dla `T > 0,7·B`, inaczej 0 (wzór 5; `T` = `link_bps`,
+  `B` = `cap()`); stan łączy co 1 s z PortStats (jak `_monitor`); łącze przeciążone od **70%**;
+  **przenoszenie wideo = usunięcie reguł QoS** (`OFPFC_DELETE` prio 70 na wszystkich przełącznikach,
+  `_flush_video_flows`), następny pakiet → Packet-In → świeży wybór; wyzwalacze (`_congestion_events`):
+  (1) łącze luźne staje się przeciążone, (2) łącze przeciążone jest luźne przez **3 kolejne okresy**;
+  tło na najkrótszej ścieżce; brak rezerwacji tymczasowej i `pending` (artykuł nic takiego nie ma)
+  - **Odstępstwa (do opisania w pracy):** Ryu + OF 1.3 zamiast Floodlight + OF 1.0; klasyfikacja po
+  DSCP zamiast portu docelowego (artykuł dopuszcza pole TOS, s. 3); CSP rozwiązany **dokładnie** przez
+  przegląd ścieżek z `topo.paths` zamiast heurystyki LARAC (≤ 4 kandydatów; na korzyść baseline'u);
+  `Dmax` = najkrótsza + `DMAX_SLACK` (1) hop; tło: `OPENQOS_BE=hash` (domyślnie) = jedna z najkrótszych
+  ścieżek po `crc32` piątki, odpowiednik ECMP z wariantu A; `OPENQOS_BE=single` = dosłownie `paths[0]`
+  (Floodlight 2012 liczył jedną najkrótszą ścieżkę; w Clos całe tło na spine1)
+  - **Cecha wzoru (5), znaleziona w teście offline:** `g < 0,3` (maksimum przy `T = B`), a dodatkowy hop
+  kosztuje 1, więc przy wadze 1 **wideo nigdy nie zejdzie na dłuższą ścieżkę**. W Clos (ścieżki równej
+  długości) bez znaczenia: przeciążenie spine1 ≥ 70% → spine2/3. W **mesh** (1 ścieżka 2-hopowa + 3-hopowe)
+  OpenQoS dosłownie = statyczna najkrótsza ścieżka dla wideo (flush przenosi na tę samą trasę). Dlatego
+  `CONG_WEIGHT` (env, domyślnie 1 = dosłownie): przy 5 ścieżka 3-hopowa wygrywa od ok. 93% obciążenia
+  (test: 9,5 Mb/s na core2 → `edge1->edge2->core3->edge4`, 8 Mb/s → zostaje). Uwaga: w testbedzie autorów
+  (trójkąt, 1 vs 2 hopy) wzór też nie przenosi, choć artykuł raportuje przenoszenie — opis w artykule
+  jest prawdopodobnie niepełny; w pracy podawać obie wersje (w = 1 i w = 5)
+  - Konsekwencja wzoru w Clos: poniżej 70% wszystkie ścieżki mają koszt 2, `min` bierze pierwszą → oba
+  strumienie wideo idą przez spine1 (60%, „nieprzeciążone”) do czasu, aż tło dociśnie łącze > 70%
+  - Pozostałe zmiany w kodzie: `flow_last` + `FLOW_CLASS_TTL` (15 s) czyści `flow_class` z przepływów
+  nieobecnych w FlowStats (żeby flush nie wysyłał DELETE dla dawno wygasłych); `_hop_name` do logu.
+  Log: `OpenQoS reroute: leaf1:1->spine1 congested 78% -> 2 QoS flows flushed` (liczba flushy i powtórnych
+  linii `Flow (…) (video, …)` per powtórzenie = liczba przeniesień; artykuł: średni czas odzyskania
+  jakości 0,76 s w 20 powtórzeniach UDP — punkt odniesienia)
+  - Test offline (2026-11-08, `select_path`/`qos_route` bez labu, Clos i mesh): pusta sieć → `paths[0]`;
+  80% na spine1 → spine2; 65% → spine1; hash tła rozrzuca 8 przepływów na 3 spine'y; maszyna stanów po
+  2 tikach przeciążenia i 4 luzu wraca do `congested=False`; YAML topologii poprawny. **Nie testowane
+  w labie** (flush → Packet-In → nowa reguła, ruch przez trasy domyślne prio 50 na tranzycie w przerwie)
+  - Odniesienie w artykule: testbed 3 × Pronto 3290 (trójkąt), 1 wideo 1,8 Mb/s RTP/UDP, cross-traffic 10 s,
+  metryka PSNR; call admission i traffic policing — future work (s. 5), niezaimplementowane
+  - **Test w labie (2026-11-09, mesh, 1 powt., `scenarios/openqos-test.yml`,
+  `results/openqos-test/20261109_023841`, harmonogram = powt. 1 serii oficjalnych):** 0 `Traceback`;
+  25 (w=1) / 29 (w=5) zmian stanu przeciążenia na 60 s, każda = flush wszystkich przepływów wideo →
+  19–25 decyzji na strumień (raport zgłasza to w sekcji 7 jako „wygasła reguła albo duplikat” — to
+  przenoszenie, nie błąd); trasy po flushu zgodne z `dump-flows`. **w = 1: wideo zawsze wraca na tę
+  samą 2-hopową trasę** (vid1 22× `edge1->core2->edge4` przy 102% na `edge1→core2`): vid1 15,44%,
+  vid2 3,78% utraty — **praktycznie równe `ecmp` z tego samego powtórzenia (15,22% / 3,80%)**, bo w mesh
+  OSPF też ma jedną najkrótszą ścieżkę. **w = 5: przenoszenie działa** (vid1 15/7/3 decyzji na 3 trasach),
+  vid1 2,36%, ale vid2 6,98% (3-hopowe trasy też przeciążone); tło 6,63% vs 9,34%. Dla porównania
+  (powt. 1): lllb 5,25/1,89%, qos100 0,54/1,59%, L3H1.5 0/0%
+  - **Test w labie, Clos (2026-11-09, 1 powt., `scenarios/openqos-test-clos.yml`,
+  `results/openqos-test-clos/20261109_024508`, w = 1, lab `clos-sdn` wdrożony obok mesh):** 0 `Traceback`;
+  35 zmian stanu (13 „clear”), vid1 26 decyzji (18× spine1, 3× spine2, 5× spine3), vid2 22 (16/3/3) —
+  **przenoszenie między spine'ami działa**, spine1 dominuje (poniżej 70% koszt wszystkich ścieżek = 2).
+  Wideo: vid1 2,92%, vid2 0,63% (ecmp 6,65/12,75, lllb 10,83/0, qos100 0/0 w tym samym powt.);
+  **jitter 0,96/0,99 ms** — 2–20× więcej niż inne warianty (każde przeniesienie = przerwa + zmiana
+  kolejki); tło 11,03% (≈ qos100). CPU VM maks. 60% przy dwóch labach — przed serią oficjalną zatrzymać
+  nieużywany lab
+  - **WYNIKI OFICJALNE wariantu D (2026-11-09, 20 powtórzeń, seed 42, `arrival_rate` 1,0)**, harmonogramy
+  identyczne z `clos-frr`/`mesh-frr` (20/20), skrót kodu `81a760eb…` bez zmian, 0 `Traceback`. Katalogi:
+  `results/official/openqos/clos-sdn/20261109_025456` (openqos, openqos_single + kotwice qos100_ref,
+  L3H1.5_ref) i `results/official/openqos/mesh-sdn/20261109_045801` (+ openqos_w5). Warianty: `openqos`
+  (w = 1, tło hash 5-tki), `openqos_w5` (`CONG_WEIGHT=5`, tylko mesh — w Clos waga nie zmienia wyboru),
+  `openqos_single` (`OPENQOS_BE=single`, tło dosłownie na `paths[0]`). **Kotwice potwierdzają, że zmiany
+  kodu z kroku 11 nie zmieniły B/C** (różnice sparowane względem wyników oficjalnych sprzed zmian, ± połowa
+  CI95): Clos `qos100_ref − qos100` wideo +0,03 ± 0,06, tło −0,70 ± 0,84; `L3H1.5_ref − L3H1.5` wideo
+  −0,01 ± 0,02, tło −0,03 ± 1,16; mesh `qos100_ref − qos100` −0,05 ± 0,11 / −0,05 ± 0,84,
+  `L3H1.5_ref − L3H1.5` 0,00 ± 0,01 / +1,06 ± 1,27 — wszystkie przedziały zawierają 0. Zatem
+  `load-0.7/mesh-sdn` (część przebiegów na zmienionym kodzie, patrz „Seria niższego obciążenia”) jest
+  wiarygodny. Średnia ± sd (w nawiasie powt. z utratą wideo > 1%):
+
+    | wariant | Clos: wideo | Clos: tło | Clos jitter / RTT p95 med. | mesh: wideo | mesh: tło | mesh jitter / RTT p95 med. |
+    |---|---|---|---|---|---|---|
+    | ecmp (A) | 13,8 ± 9,6% (18) | 12,1% | 0,41 / 59 ms | 10,9 ± 8,0% (19) | 10,4% | 0,27 / 67 ms |
+    | lllb (B) | 4,9 ± 4,6% (16) | 4,9% | 0,24 / 70 ms | 10,2 ± 6,2% (18) | 8,5% | 0,36 / 118 ms |
+    | qos100 (C) | 0,00% (0) | 12,9% | 0,08 / 0,05 ms | 0,05 ± 0,24% (1) | 26,0% | 0,08 / 0,05 ms |
+    | L3H1.5 (C) | 0,01% (0) | 8,7% | 0,07 / 0,05 ms | 0,01% (0) | 12,5% | 0,06 / 0,05 ms |
+    | **openqos (D)** | 4,5 ± 3,3% (18) | 11,3 ± 4,9% | 0,33 / 59 ms | 10,6 ± 7,6% (18) | 10,2 ± 5,5% | 0,30 / 60 ms |
+    | openqos_w5 | — | — | — | 5,7 ± 4,7% (16) | 10,0 ± 5,4% | **1,34** / 60 ms |
+    | openqos_single | 0,51 ± 0,61% (5) | **39,1 ± 7,5%** | 0,11 / 15 ms | 8,6 ± 7,2% (17) | 10,6 ± 5,4% | 0,31 / 59 ms |
+
+  - **wnioski D** (różnice sparowane ± połowa CI95, pkt proc.): (1) D nie chroni wideo jak C: openqos −
+    L3H1.5 wideo +4,46 ± 1,54 (Clos) i +10,64 ± 3,56 (mesh); (2) Clos: openqos − ecmp wideo −9,3 ± 3,8
+    (tło −0,8 ± 2,4, bez różnicy), openqos − lllb wideo −0,4 ± 2,0 (bez różnicy), tło +6,4 ± 1,5 —
+    zysk wideo na poziomie LLLB kosztem tła; (3) **mesh: openqos ≈ ecmp** (wideo −0,25 ± 0,97, tło −0,22 ±
+    0,96) — przy w = 1 wzór (5) nie przenosi wideo na dłuższą ścieżkę, więc to statyczna najkrótsza
+    ścieżka (cecha algorytmu); (4) `openqos_w5` (rozszerzenie, nie z artykułu) poprawia wideo na mesh
+    (−4,97 ± 3,40 względem openqos, tło bez zmian) za cenę jittera 1,34 ms (+1,04 ± 0,91); nadal
+    +5,66 ± 2,21 wideo względem L3H1.5; (5) `openqos_single` w Clos: całe tło na spine1, więc wideo
+    ucieka na spine2/3 (0,51%, jitter 0,11), ale tło traci 39% (+27,8 ± 2,7 względem openqos) — wariant
+    skrajny, dosłowny wg artykułu; na mesh bez istotnej różnicy względem openqos (wideo −2,0 ± 1,1);
+    (6) mesh: openqos − L3H1.5 w tle −2,4 ± 2,1 — D traci o ok. 2 pkt proc. mniej tła, ale bez ochrony
+    wideo
+  - Liczba przeniesień wideo (zdarzeń `OpenQoS reroute`) na powtórzenie: Clos openqos 34 (52 decyzje trasy
+    wideo UDP), openqos_single 20; mesh openqos 23, openqos_w5 28, openqos_single 23; każde zdarzenie
+    kasuje reguły wszystkich przepływów wideo (przerwa + zmiana kolejek), stąd wyższy jitter. CSV:
+    `results/official/wykresy-<topologia>/dane_<topologia>_openqos_przeniesienia.csv` (z lokalnych logów
+    `raw/`)
+  - Ograniczenia: reimplementacja (Ryu + OF 1.3, DSCP zamiast portu, CSP dokładnie zamiast LARAC,
+    `Dmax` = najkrótsza + 1), `openqos_w5` i `openqos_single` to badanie czułości na wybory niedookreślone
+    w artykule; D niezmierzony przy `arrival_rate` 0,4 / 0,7
 - **Narzędzie pomiarowe** (lokalny skill `.claude/skills/sdn-test-runner/`, poza repozytorium —
   `.claude` w `.gitignore`; scenariusze w `scenarios/*.yml`, kopia scenariusza w każdym wyniku):
   - `run_scenario.py scenarios/<nazwa>.yml [--only a,b] [--dry-run]`: dla każdego powtórzenia
@@ -226,14 +330,15 @@ z nazwą pliku, razem z rozszerzeniem `.yml`); zmiana kodu → `docker restart c
   / bez” wyłączone (`NO_METER = None`: dane bez metera to 5 powtórzeń sprzed poprawek)
   - `analysis/export_excel.py` (w repozytorium): `.venv/bin/python analysis/export_excel.py <katalog>
   [<katalog> …] -o plik.xlsx` — jeden plik .xlsx z arkuszami: opis, podsumowanie (n, średnia, sd,
-  CI95 z rozkładu t, mediana, min, maks), sparowane (różnice wariant − ecmp/lllb/qos100 w
-  parach), powtorzenia, strumienie, przebiegi_usrednione, timeseries_surowe, lacza, harmonogram;
+  CI95 z rozkładu t, mediana, min, maks), sparowane (różnice wariant − ecmp/lllb/qos100/L3H1.5 w
+  parach; ta sama nazwa wariantu w dwóch katalogach, np. kotwica `qos100_ref`, dostaje przyrostek `_2`), powtorzenia, strumienie, przebiegi_usrednione, timeseries_surowe, lacza, harmonogram;
   liczby jako liczby (polski Excel). Wymaga `openpyxl` w `.venv`
   - **Wyniki oficjalne** w `results/official/<topologia>/<znacznik czasu>/` (`clos-frr`,
   `clos-sdn`, `mesh-frr`, `mesh-sdn`; seria niższego obciążenia w `results/official/load-<arrival_rate>/<topologia>/`): 20 powtórzeń, seed 42, każdy katalog ma
   `PROVENANCE.txt` (czas, hash kodu `controllers/*.py` + topologii, wersje i digesty obrazów, CPU),
   `report.md`, CSV, wykresy i `dane_excel.xlsx` (surowe `raw/` poza gitem: `results/**/raw/` w
-  `.gitignore`). Zbiorcze pliki do Excela: `results/official/dane_clos_wszystko.xlsx`, `dane_mesh_wszystko.xlsx`
+  `.gitignore`). Zbiorcze pliki do Excela: `results/official/dane_clos_wszystko.xlsx`, `dane_mesh_wszystko.xlsx` (z wariantem D i kotwicami; polecenie:
+  `export_excel.py results/official/<t>-frr/* results/official/<t>-sdn/* results/official/openqos/<t>-sdn/* -o …`)
 - **Wyniki pomiarów** (Clos, UDP `-l 1400`, wideo 3 Mb/s DSCP 46; pełne raporty w `results/`):
   - `lllb-vs-rr-basic` (5 pow., scenariusz deterministyczny): wideo LLLB 3,04 ± 2,10% strat,
   RR 0,00%; tło LLLB 0,07 / 0,03 / 0,01 / 3,53%, RR 30,5 / 44,2 / 6,3 / 44,6%; odrzuceń
@@ -596,6 +701,9 @@ potem wyniki serii `results/official/load-*`; przed wyłączeniem VM zawsze `git
   20 powtórzeń, seed 42) w toku od 2026-11-05 20:45: wyniki w `results/official/load-0.4/` i
   `load-0.7/`; do analizy: porównanie trzech poziomów obciążenia (czy ecmp nadrabia przy niskim
   obciążeniu, koszt rezerwy rośnie z obciążeniem)
+- **Wariant D (OpenQoS)**: zmierzony i przeanalizowany przy `arrival_rate` 1,0 (patrz krok 11); do
+  zrobienia opcjonalnie D przy 0,4 i 0,7 (openqos, openqos_w5 na mesh; ok. 2 h na topologię) oraz
+  jitter wokół przeniesień wideo
 - Czułość na tempo wideo (np. 1,5 / 3 / 4,5 Mb/s; `VIDEO_EST_BPS` obecnie stałe 3 Mb/s —
   uczynić zmienną env lub adaptacyjną) i poziomy obciążenia tła (patrz niżej)
 - Zbadać powtórzenia z długim RTT w L3H1.5 (średnia 2,8 ms, mediana 0,05 ms)

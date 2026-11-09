@@ -16,6 +16,7 @@
   - A: OSPF + ECMP (FRRouting)
   - B: SDN + LLLB (Least Loaded Link Balancing)
   - C: SDN + autorski algorytm QoS-Aware — rezerwa pasma na jednej ścieżce dla ruchu wideo (DSCP), pozostałe ścieżki dla best-effort
+  - D (punkt odniesienia z literatury): SDN + OpenQoS (Egilmez i in., APSIPA 2012) — reaktywny routing QoS dla wideo (CSP, przenoszenie przy przeciążeniu łącza > 70%), bez rezerwacji pasma i bez kolejek; `POLICY=openqos`
 
 ## 3. Środowisko i Stos Technologiczny
 - **Platforma bazowa:** Maszyna wirtualna z systemem Linux, Containerlab.
@@ -26,7 +27,7 @@
 - **Łącza:** `tc tbf` w `exec` — leaf↔spine 10 Mb/s, host↔leaf 100 Mb/s (po obu końcach łącza).
 - **Obrazy:** `quay.io/frrouting/frr:9.0.1` (FRR), `kathara/sdn` (Open vSwitch 3.1), `sdn-ryu:4.34` (własny, `images/ryu/Dockerfile`), `wbitt/network-multitool` (hosty).
 - **Architektura tradycyjna:** OSPF area 0 + ECMP (FRRouting, `configs/frr/clos/`, `configs/frr/mesh/`, hash L4).
-- **Architektura SDN:** OpenFlow 1.3, kontroler Ryu 4.34 (Python): `controllers/controller_ryu.py` (aplikacja `Fabric`) + `controllers/topo.py` (model sieci z pliku clab). Wybór ścieżki per przepływ, polityka przez zmienną `POLICY` (`rr`, `lllb`, `qos`); wariant C (`qos`): klasyfikacja po DSCP 46, ścieżka rezerwowa dla wideo (`paths[0]`), udział best-effort na rezerwie ograniczony przez `RESERVE_PCT`, pomiar obciążenia per klasa z `FlowStats`.
+- **Architektura SDN:** OpenFlow 1.3, kontroler Ryu 4.34 (Python): `controllers/controller_ryu.py` (aplikacja `Fabric`) + `controllers/topo.py` (model sieci z pliku clab). Wybór ścieżki per przepływ, polityka przez zmienną `POLICY` (`rr`, `lllb`, `qos`, `openqos`); wariant C (`qos`): klasyfikacja po DSCP 46, ścieżka rezerwowa dla wideo (`paths[0]`), udział best-effort na rezerwie ograniczony przez `RESERVE_PCT`, pomiar obciążenia per klasa z `FlowStats`.
 - **Generowanie i analiza ruchu:** iperf3 (UDP z `-l 1400`, metryki z raportu serwera), ping wideo z DSCP. Lokalny skill `.claude/skills/sdn-test-runner/` (poza repozytorium) uruchamia scenariusze z `scenarios/` i generuje raporty do `results/`. Wyniki i stan prac: `docs/status.md`.
 
 ## 4. Oczekiwania Wobec Odpowiedzi

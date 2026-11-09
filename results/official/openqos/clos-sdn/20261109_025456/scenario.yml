@@ -1,0 +1,27 @@
+# OFICJALNA seria wariantu D (OpenQoS, baseline z literatury) na clos, arrival_rate 1,0, 20 powtórzeń; wyniki w results/official/openqos/clos-sdn/.
+# Seed 42 i generator identyczne jak w seriach oficjalnych (clos-frr/mesh-frr, *-sdn-czesc*), więc harmonogramy powtórzeń 1-20 są te same i porównania są sparowane.
+# Kotwice qos100_ref i L3H1.5_ref: kontrola, że zmiany w kontrolerze z kroku 11 nie zmieniły wyników wariantów B/C (porównanie sparowane z qos100 i L3H1.5 z serii oficjalnych).
+name: clos-sdn
+topology: clos
+variants:
+  - {name: openqos,        policy: openqos}
+  - {name: openqos_single, policy: openqos, env: {OPENQOS_BE: single}}
+  - {name: qos100_ref,     policy: qos, reserve_pct: 100, env: {LAYERS: 1}}
+  - {name: L3H1.5_ref,     policy: qos, reserve_pct: 70,  env: {LAYERS: 3, HEADROOM_MBPS: 1.5}}
+duration: 60
+warmup: 5
+repetitions: 20
+seed: 42
+vary_per_repetition: true
+flows:
+  - {id: vid1, class: video, src: h1-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 10, duration: 40}
+  - {id: vid2, class: video, src: h2-video, dst: h4-video, proto: udp, rate: 3M, dscp: 46, length: 1400, start: 12, duration: 36}
+generator:
+  arrival_rate: 1.0
+  duration_mean: 15
+  duration_min: 5
+  rate: [1M, 6M]
+  proto: udp
+  from: 0
+  until: 50
+  different_switch: true

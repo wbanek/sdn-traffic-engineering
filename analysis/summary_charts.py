@@ -32,8 +32,9 @@ OUT = OUT_BASE
 L1 = ["m90", "m70", "m50", "m30"]
 L2 = ["L2r90", "L2r70", "L2r50", "L2r30"]
 L3 = ["L3H0", "L3H1.5", "L3H3"]
+D = ["openqos", "openqos_w5", "openqos_single"]
 BASE = ["ecmp", "lllb", "qos100"]
-ORDER = BASE + L1 + L2 + L3
+ORDER = BASE + L1 + L2 + L3 + D
 R_OF = {"qos100": 100, "m90": 90, "m70": 70, "m50": 50, "m30": 30,
         "L2r90": 90, "L2r70": 70, "L2r50": 50, "L2r30": 30}
 H_OF = {"L3H0": 0.0, "L3H1.5": 1.5, "L3H3": 3.0}
@@ -45,21 +46,23 @@ SOURCES = {
     "Clos": [
         ("results/official/clos-frr/*", {"ecmp": "ecmp"}),
         ("results/official/clos-sdn/*", {v: v for v in BASE + L1 + L2 + L3 if v != "ecmp"}),
+        ("results/official/openqos/clos-sdn/*", {v: v for v in D}),
     ],
     "Mesh": [
         ("results/official/mesh-frr/*", {"ecmp": "ecmp"}),
         ("results/official/mesh-sdn/*", {v: v for v in BASE + L1 + L2 + L3 if v != "ecmp"}),
+        ("results/official/openqos/mesh-sdn/*", {v: v for v in D}),
     ],
 }
 # Porównanie "z meterem / bez" wyłączone: dane bez metera to 5 powtórzeń sprzed poprawek, więc nie są
 # porównywalne z oficjalnymi 20 powtórzeniami. Ustaw krotkę (topologia, katalog, {wariant: wariant}), by włączyć.
 NO_METER = None
 # Warianty na wykresie przebiegów czasowych (przy 14 liniach wykres byłby nieczytelny)
-LINE_VARIANTS = ["ecmp", "lllb", "qos100", "m70", "L2r70", "L3H1.5"]
+LINE_VARIANTS = ["ecmp", "lllb", "qos100", "m70", "L2r70", "L3H1.5", "openqos"]
 
 SURFACE, INK, INK2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e6e5e1"
 FAMILY_COLOR = {"ecmp": "#8b8a86", "lllb": "#2a78d6", "qos100": "#eb6834",
-                "L1": "#1baf7a", "L2": "#8a63d2", "L3": "#eda100"}
+                "L1": "#1baf7a", "L2": "#8a63d2", "L3": "#eda100", "D": "#c2385f"}
 
 
 def shade(hex_color, t):
@@ -76,6 +79,8 @@ def build_colors():
             color[v] = shade(FAMILY_COLOR[fam], 0.12 * i)
     for i, v in enumerate(reversed(L3)):           # większe H -> ciemniej
         color[v] = shade(FAMILY_COLOR["L3"], 0.12 * i)
+    for i, v in enumerate(D):                      # openqos najciemniej
+        color[v] = shade(FAMILY_COLOR["D"], 0.18 * i)
     return color
 
 
@@ -88,6 +93,7 @@ FAMILIES = [
     ("L1", "L1 (C: meter o stałej stawce, m90...m30)", "m90"),
     ("L2", "L2 (C: meter + bramka „mieści się”, L2r90...L2r30)", "L2r90"),
     ("L3", "L3 (C: limit dynamiczny, L3H0...L3H3)", "L3H3"),
+    ("D", "D (OpenQoS: reaktywny CSP, bez rezerwacji)", "openqos"),
 ]
 
 
@@ -96,6 +102,8 @@ def label(v):
         return "%s (tło ≤ %d%% łącza)" % (v, 100 - R_OF[v])
     if v in H_OF:
         return "%s (zapas %g Mb/s)" % (v, H_OF[v])
+    if v == "openqos":
+        return "openqos (D: OpenQoS)"
     return v
 
 
@@ -351,10 +359,14 @@ def tradeoff_figure(topo, data):
             txt, off = v, (9, 7)
         elif v == "qos100":
             txt, off = v, (-14, 70)
+        elif v in D:           # wariant D: etykiety rozsunięte, żeby nie nachodziły
+            txt, off = v.replace("openqos", "D"), ({"openqos": (10, 26), "openqos_w5": (10, -30), "openqos_single": (-60, 24)} if topo == "Clos" else
+                      {"openqos": (26, 36), "openqos_w5": (38, -32), "openqos_single": (-92, 44)})[v]
         elif v in H_OF:        # etykiety L3 na różnych wysokościach, żeby nie nachodziły
             txt, off = "H=%g" % H_OF[v], [(-10, 22), (0, 40), (12, 58)][L3.index(v)]
         elif v in L2:
-            txt, off = "L2 R=%d" % R_OF[v], {90: (30, -34), 70: (-34, -34), 50: (-62, -8), 30: (-44, -22)}[R_OF[v]]
+            txt, off = "L2 R=%d" % R_OF[v], ({90: (30, -34), 70: (-34, -34), 50: (-62, -8), 30: (-44, -22)} if topo != "Clos" else
+                      {90: (30, -34), 70: (-34, -34), 50: (-30, -40), 30: (-76, -2)})[R_OF[v]]
         else:
             txt, off = "R=%d" % R_OF[v], (8, 22)
         ax.annotate(txt, (mx, my), textcoords="offset points", xytext=off, fontsize=8.5, color=INK2,
@@ -500,7 +512,7 @@ METRICS = [("vloss", "wideo_utrata_pct"), ("vjit", "wideo_jitter_ms"), ("vrtt", 
 
 
 def family_of(v):
-    return "L1" if v in L1 else "L2" if v in L2 else "L3" if v in L3 else v
+    return "L1" if v in L1 else "L2" if v in L2 else "L3" if v in L3 else "D" if v in D else v
 
 
 def export_csv(topo, data, dirs):
@@ -554,7 +566,7 @@ def export_csv(topo, data, dirs):
 
 
 # ---------------------------------------------------------------- porównanie topologii
-COMPARE = ["ecmp", "lllb", "qos100", "m70", "L2r70", "L3H0", "L3H1.5", "L3H3"]
+COMPARE = ["ecmp", "lllb", "openqos", "qos100", "m70", "L2r70", "L3H0", "L3H1.5", "L3H3"]
 
 
 def compare_figures(datas):
@@ -595,6 +607,33 @@ def compare_figures(datas):
     return paths
 
 
+def openqos_reroutes(topo):
+    """CSV: liczba przeniesień wideo OpenQoS (linie `OpenQoS reroute`) i decyzji trasy wideo UDP na powtórzenie,
+    z logów kontrolera w raw/ (lokalnie; raw/ poza gitem)."""
+    rows = []
+    for d in expand("results/official/openqos/%s-sdn/*" % topo.lower()):
+        for v in D:
+            for rep in range(1, 100):
+                log = os.path.join(d, "raw", v, "rep%d" % rep, "controller.log")
+                if not os.path.exists(log):
+                    continue
+                reroutes = decisions = 0
+                for line in open(log, errors="replace"):
+                    if "OpenQoS reroute" in line:
+                        reroutes += 1
+                    elif line.startswith("Flow (17,") and "video" in line:
+                        decisions += 1
+                rows.append([v, rep, reroutes, decisions])
+    if not rows:
+        return []
+    p = os.path.join(OUT, "dane_%s_openqos_przeniesienia.csv" % topo.lower())
+    with open(p, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["wariant", "powtorzenie", "przeniesienia_wideo_zdarzenia", "decyzje_trasy_wideo_udp"])
+        w.writerows(rows)
+    return [p]
+
+
 def main():
     global OUT
     outputs, datas = [], {}
@@ -614,6 +653,7 @@ def main():
                 if os.path.exists(os.path.join(d, "timeseries.csv"))]
         outputs += lines_figure(topo, dirs)
         outputs += export_csv(topo, data, dirs)
+        outputs += openqos_reroutes(topo)
         if topo == "Clos" and NO_METER:
             outputs += meter_figure(data)
     OUT = os.path.join(OUT_BASE, "wykresy-porownanie-topologii")

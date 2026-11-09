@@ -13,6 +13,7 @@ Sprawdzenie, jak trzy podejścia do rozkładania ruchu zachowują się w sieci S
 | **A** | OSPF + ECMP (FRRouting) |
 | **B** | SDN + LLLB, czyli Least Loaded Link Balancing (Ryu + Open vSwitch) |
 | **C** | SDN + autorski algorytm QoS-Aware z rezerwą pasma dla wideo (Ryu + Open vSwitch) |
+| **D** | punkt odniesienia z literatury: SDN + OpenQoS (Egilmez i in. 2012), reaktywny routing QoS bez rezerwacji |
 
 Mierzone parametry: jitter, packet loss, latency, throughput. Poziomy obciążenia tła: intensywność losowych przepływów tła (`arrival_rate` 0,4 / 0,7 / 1,0).
 
@@ -44,6 +45,7 @@ Wyniki oficjalne, Clos (`results/official/`, dwa strumienie wideo 3 Mb/s DSCP 46
 |---|---|---|
 | OSPF + ECMP (A) | 13,8 ± 9,6% | 12,1 ± 6,2% |
 | LLLB (B) | 4,9 ± 4,6% | **4,9 ± 3,1%** |
+| OpenQoS (D, baseline z literatury) | 4,5 ± 3,3% | 11,3 ± 4,9% |
 | QoS-Aware, pełna rezerwa (C, R = 100%) | **0,00%** | 12,9 ± 6,1% |
 | QoS-Aware, L3 z zapasem H = 1,5 Mb/s (C) | 0,01 ± 0,04% | 8,7 ± 4,4% |
 
@@ -53,10 +55,11 @@ Mesh (te same harmonogramy, 20 powtórzeń):
 |---|---|---|
 | OSPF + ECMP (A) | 10,9 ± 8,0% | 10,4 ± 5,5% |
 | LLLB (B) | 10,2 ± 6,2% | **8,5 ± 4,4%** |
+| OpenQoS (D, baseline z literatury) | 10,6 ± 7,6% | 10,2 ± 5,5% |
 | QoS-Aware, pełna rezerwa (C, R = 100%) | 0,05 ± 0,24% | 26,0 ± 7,5% |
 | QoS-Aware, L3 z zapasem H = 1,5 Mb/s (C) | **0,01 ± 0,02%** | 12,5 ± 5,1% |
 
-Rezerwa ścieżki eliminuje utratę wideo; adaptacyjny limit tła (L3) zmniejsza jej koszt dla ruchu tła (na Clos o ok. 4 pkt proc., na mesh o ok. 13 pkt proc. względem pełnej rezerwy). Stały limit (L1/L2) chroni wideo tylko dla R ≥ 70%. Na mesh LLLB nie poprawia wideo względem ECMP. Szczegóły, ograniczenia i różnice sparowane: [docs/status.md](docs/status.md).
+Rezerwa ścieżki eliminuje utratę wideo; adaptacyjny limit tła (L3) zmniejsza jej koszt dla ruchu tła (na Clos o ok. 4 pkt proc., na mesh o ok. 13 pkt proc. względem pełnej rezerwy). Stały limit (L1/L2) chroni wideo tylko dla R ≥ 70%. Na mesh LLLB nie poprawia wideo względem ECMP. Wariant D (OpenQoS: reaktywny routing QoS bez rezerwacji) chroni wideo słabiej niż C: na Clos na poziomie LLLB, na mesh na poziomie ECMP. Szczegóły, ograniczenia i różnice sparowane: [docs/status.md](docs/status.md).
 
 ## Dokumentacja
 
